@@ -20,9 +20,8 @@ TIMEOUT = 5
 # ─── Публічні API ендпоінти бірж ──────────────────────────────────────────────
 EXCHANGE_APIS = {
     "binance": {
-        "spot":    "https://api.binance.com/api/v3/ticker/24hr",
+        "spot":    "https://api.binance.com/api/v3/ticker/24hr",  # може бути заблокований на cloud
         "funding": "https://fapi.binance.com/fapi/v1/premiumIndex",
-        "book":    "https://api.binance.com/api/v3/ticker/bookTicker",  # bid/ask
         "color":   "#F0B90B",
     },
     "bybit": {
@@ -336,7 +335,6 @@ def api_spread():
 @app.route("/api/funding")
 def api_funding():
     tasks = {
-        "binance": ("https://fapi.binance.com/fapi/v1/premiumIndex", None),
         "bybit":   ("https://api.bybit.com/v5/market/tickers?category=linear", None),
         "gate":    ("https://api.gateio.ws/api/v4/futures/usdt/tickers", None),
         "mexc":    ("https://contract.mexc.com/api/v1/contract/ticker", None),
@@ -352,12 +350,6 @@ def api_funding():
             name = gc.get("name","").replace("_","")
             secs = int(gc.get("funding_interval", 28800) or 28800)
             gate_intervals[name] = f"{secs//3600}H"
-
-    for d in (raw.get("binance") or []):
-        sym = d.get("symbol", "")
-        if not sym.endswith("USDT"): continue
-        rate = float(d.get("lastFundingRate", 0) or 0) * 100
-        result.append({"exchange":"Binance","symbol":sym,"rate":round(rate,4),"annualized":round(rate*3*365,2),"color":"#F0B90B","mark_price":float(d.get("markPrice",0) or 0),"positive":rate>=0,"interval":"8H"})
 
     for d in (raw.get("bybit") or {}).get("result",{}).get("list",[]):
         sym = d.get("symbol", "")
@@ -409,8 +401,9 @@ def api_market():
     }
 
     tasks = {
-        "all_tickers":  (EXCHANGE_APIS["binance"]["spot"], None),
-        "funding_rates": ("https://fapi.binance.com/fapi/v1/premiumIndex", None),
+        "all_tickers":  ("https://api.bybit.com/v5/market/tickers?category=spot", None),
+        "bybit_linear":  ("https://api.bybit.com/v5/market/tickers?category=linear", None),
+        "mexc_spot":     (EXCHANGE_APIS["mexc"]["spot"], None),
     }
     raw = fetch_all_parallel(tasks)
 
@@ -463,7 +456,7 @@ def api_rates():
         "APTUSDT","OPUSDT","ARBUSDT","INJUSDT","SUIUSDT",
         "TRXUSDT","TONUSDT","SHIBUSDT","MATICUSDT","FTMUSDT",
     ]
-    tasks = {sym: (EXCHANGE_APIS["binance"]["spot"], {"symbol": sym}) for sym in crypto_symbols}
+    tasks = {sym: (f"https://api.bybit.com/v5/market/tickers?category=spot&symbol={sym}", None) for sym in crypto_symbols}
     tasks["fiat"] = ("https://open.er-api.com/v6/latest/USD", None)
 
     raw = fetch_all_parallel(tasks)
@@ -474,9 +467,11 @@ def api_rates():
         data = raw.get(sym)
         if data and isinstance(data, dict):
             key = sym.replace("USDT", "")
-            val = float(data.get("lastPrice", 0) or 0)
-            if val > 0:
-                rates[key] = val
+            items = data.get("result",{}).get("list",[])
+            if items:
+                val = float(items[0].get("lastPrice",0) or 0)
+                if val > 0:
+                    rates[key] = val
 
     # Фіат — зберігаємо як кількість одиниць за 1 USD
     FIAT_KEYS = [
@@ -538,7 +533,8 @@ def api_symbols():
     if now - _symbols_cache["ts"] < 3600 and _symbols_cache["data"]:
         return jsonify({"data": _symbols_cache["data"], "cached": True})
 
-    data = safe_get("https://api.binance.com/api/v3/ticker/24hr")
+    data_raw = safe_get("https://api.bybit.com/v5/market/tickers?category=spot")
+    data = (data_raw or {}).get("result",{}).get("list",[])
     if not data:
         return jsonify({"data": _symbols_cache["data"], "cached": True})
 
@@ -564,8 +560,8 @@ def api_symbols():
             continue
         base   = sym.replace("USDT", "")
         price  = float(d.get("lastPrice", 0) or 0)
-        change = float(str(d.get("priceChangePercent", 0) or 0).replace("%",""))
-        vol    = float(d.get("quoteVolume", 0) or 0)
+        change = float(d.get("price24hPcnt", 0) or 0) * 100
+        vol    = float(d.get("turnover24h", 0) or 0)
         symbols.append({
             "symbol": sym,
             "base":   base,
@@ -598,10 +594,10 @@ def api_ticker():
     tasks = {}
     for sym in TOP_TOKENS:
         tasks[f"kline_{sym}"] = (
-            f"https://api.binance.com/api/v3/klines?symbol={sym}&interval=8h&limit=2", None
+            f"https://api.bybit.com/v5/market/kline?category=spot&symbol={sym}&interval=480&limit=2", None
         )
-    tasks["funding"] = ("https://fapi.binance.com/fapi/v1/premiumIndex", None)
-    tasks["tickers_binance"] = (EXCHANGE_APIS["binance"]["spot"], None)
+    tasks["funding"] = ("https://api.bybit.com/v5/market/tickers?category=linear", None)
+    tasks["tickers_bybit_all"] = ("https://api.bybit.com/v5/market/tickers?category=spot", None)
     tasks["tickers_bybit"]   = ("https://api.bybit.com/v5/market/tickers?category=spot", None)
     tasks["tickers_mexc"]    = (EXCHANGE_APIS["mexc"]["spot"], None)
     tasks["tickers_gate"]    = (EXCHANGE_APIS["gate"]["spot"], None)
@@ -619,8 +615,10 @@ def api_ticker():
         klines = raw.get(f"kline_{sym}")
         if not klines or len(klines) < 1:
             continue
-        # Остання свічка: [openTime, open, high, low, close, ...]
-        last  = klines[-1]
+        # Bybit kline format: list of [startTime, open, high, low, close, volume, turnover]
+        kline_list = klines.get("result",{}).get("list",[]) if isinstance(klines,dict) else []
+        if not kline_list: continue
+        last  = kline_list[0]  # Bybit: newest first
         open_ = float(last[1])
         close = float(last[4])
         change_8h = ((close - open_) / open_ * 100) if open_ > 0 else 0
@@ -635,7 +633,7 @@ def api_ticker():
     # ── Спреди ─────────────────────────────────────────────────────────────────
     ex_data = {}
     parse_map = {
-        "tickers_binance": ("binance", parse_binance_spot),
+        "tickers_bybit_all": ("bybit",   parse_bybit_spot),
         "tickers_bybit":   ("bybit",   parse_bybit_spot),
         "tickers_mexc":    ("mexc",    parse_mexc_spot),
         "tickers_gate":    ("gate",    parse_gate_spot),
@@ -674,13 +672,13 @@ def api_ticker():
     top_spreads = spreads[:5]
 
     # ── Funding extremes ───────────────────────────────────────────────────────
-    funding_raw = raw.get("funding") or []
+    funding_raw  = (raw.get("funding") or {}).get("result",{}).get("list",[])
     funding_items = []
     for d in funding_raw:
         sym = d.get("symbol","")
         if not sym.endswith("USDT"):
             continue
-        rate = float(d.get("lastFundingRate", 0) or 0) * 100
+        rate = float(d.get("fundingRate", 0) or 0) * 100
         if abs(rate) < 0.02:
             continue
         funding_items.append({
