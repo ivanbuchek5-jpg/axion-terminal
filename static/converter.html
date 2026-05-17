@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AXION TERMINAL — Converter</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>tailwind.config={darkMode:"class",theme:{extend:{colors:{"sf":"#111319","sf-low":"#191b22","sf-ctr":"#1d1f26","sf-hi":"#282a30","sf-top":"#33343b","sf-min":"#0c0e14","brd":"#3b4a44","tx":"#e2e2ea","tx2":"#bacac2","pri":"#46f1c5","pri-c":"#00d4aa","grn":"#4ae176","red":"#ffb4ab"},fontFamily:{"sans":["Geist"],"mono":["JetBrains Mono","monospace"]}}}}</script>
+<script src="autocomplete.js"></script>
+<style>
+body{background:#111319;color:#e2e2ea;-webkit-font-smoothing:antialiased}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.no-sb::-webkit-scrollbar{display:none}.no-sb{-ms-overflow-style:none;scrollbar-width:none}
+a.nav-active{color:#46f1c5;border-bottom:2px solid #46f1c5}
+@keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin .8s linear infinite}
+.quick-btn{border:1px solid #3b4a44;color:#bacac2;font-family:'JetBrains Mono';font-size:11px;padding:4px 10px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.quick-btn:hover{background:#282a30;color:#46f1c5;border-color:#46f1c5}
+/* Autocomplete dropdown z-index fix */
+.ct-dropdown{z-index:9999 !important}
+/* Currency input wrapper */
+.cur-input-wrap{position:relative;display:flex;align-items:center;background:#1d1f26;border:1px solid #3b4a44;}
+.cur-input-wrap:focus-within{border-color:#00d4aa}
+.cur-tag{font-family:'JetBrains Mono';font-size:13px;padding:10px 12px;border-right:1px solid #3b4a44;min-width:90px;cursor:pointer;color:#e2e2ea;display:flex;align-items:center;gap:6px;transition:background .15s}
+.cur-tag:hover{background:#282a30}
+.cur-tag input{background:transparent;border:none;outline:none;font-family:'JetBrains Mono';font-size:13px;color:#e2e2ea;width:64px;cursor:pointer}
+.cur-tag input::placeholder{color:#bacac2}
+.amt-input{flex:1;background:#1d1f26 !important;border:none;outline:none;font-family:'JetBrains Mono';font-size:20px;color:#e2e2ea !important;text-align:right;padding:10px 14px;-webkit-appearance:none;appearance:none;color-scheme:dark;box-shadow:none}
+.amt-input::-webkit-outer-spin-button,.amt-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.amt-input[type=number]{-moz-appearance:textfield}
+.amt-input:-webkit-autofill,.amt-input:-webkit-autofill:hover,.amt-input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px #1d1f26 inset !important;-webkit-text-fill-color:#e2e2ea !important;background-color:#1d1f26 !important}
+.amt-input::placeholder{color:#3b4a44}
+</style>
+</head>
+<body class="bg-sf text-tx h-screen w-screen overflow-hidden flex flex-col font-sans text-sm">
+
+<nav class="hidden md:flex bg-sf border-b border-brd justify-between items-center w-full px-4 h-14 shrink-0">
+  <a href="index.html" class="font-bold text-xl text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
+  <div class="flex items-center h-full gap-1 text-xs">
+    <a href="index.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Home</a>
+    <a href="prices.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Prices</a>
+    <a href="spread.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Spread</a>
+    <a href="funding.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Funding</a>
+    <a href="converter.html" class="nav-active h-full flex items-center px-4 text-[14px]">Converter</a>
+    <a href="chart.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Chart</a>
+  </div>
+  <div class="flex items-center bg-[#12141a] border border-[#2d3139] px-2 h-8">
+    <span class="material-symbols-outlined text-tx2 mr-1" style="font-size:16px">search</span>
+    <input id="navSearch" class="bg-transparent outline-none font-mono text-xs text-tx w-36 p-0" placeholder="Search pair..." autocomplete="off"/>
+  </div>
+</nav>
+<header class="md:hidden flex items-center justify-between px-4 h-12 shrink-0 bg-sf border-b border-brd">
+  <a href="index.html" class="font-bold text-lg text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
+  <div><span class="material-symbols-outlined text-tx2" style="font-size:22px">currency_exchange</span></div>
+</header>
+
+<main class="flex-1 overflow-y-auto no-sb p-4 flex flex-col md:flex-row gap-4 pb-20 md:pb-4 md:items-start">
+
+  <!-- LEFT: Equivalent Values + Fiat Rates -->
+  <div class="flex flex-col gap-4 md:w-[300px] shrink-0">
+
+    <!-- Multi-output -->
+    <div class="bg-sf-min border border-brd">
+      <div class="h-8 border-b border-brd bg-sf-ctr flex items-center justify-between px-4">
+        <span class="font-mono text-[10px] text-tx2 uppercase tracking-widest">Equivalent Values —</span>
+        <span id="eqTitle" class="font-mono text-[10px] text-pri uppercase tracking-widest font-semibold"></span>
+      </div>
+      <div id="multiOutput" class="p-2">
+        <div class="flex items-center justify-center py-6 text-tx2 font-mono text-xs">
+          <span class="material-symbols-outlined spin mr-2" style="font-size:16px">refresh</span>Loading...
+        </div>
+      </div>
+    </div>
+
+    <!-- Live fiat rates -->
+    <div class="bg-sf-min border border-brd">
+      <div class="h-8 border-b border-brd bg-sf-ctr flex items-center px-4 font-mono text-[10px] text-tx2 uppercase tracking-widest">
+        Fiat Rates (per 1 USD)
+      </div>
+      <div id="fiatRates" class="max-h-[300px] overflow-y-auto no-sb">
+        <div class="flex items-center justify-center py-6 text-tx2 font-mono text-xs">
+          <span class="material-symbols-outlined spin mr-2" style="font-size:16px">refresh</span>Loading...
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CENTER: Quick Pairs + Converter -->
+  <div class="flex-1 max-w-[520px] mx-auto flex flex-col gap-4">
+    <!-- Quick pairs -->
+    <div class="bg-sf-min border border-brd p-3">
+      <div class="text-[10px] text-tx2 uppercase tracking-widest font-mono mb-2">Quick Pairs</div>
+      <div class="flex flex-wrap gap-1.5">
+        <button class="quick-btn" onclick="setQuick('BTC','USD')">BTC → USD</button>
+        <button class="quick-btn" onclick="setQuick('ETH','USD')">ETH → USD</button>
+        <button class="quick-btn" onclick="setQuick('BTC','ETH')">BTC → ETH</button>
+        <button class="quick-btn" onclick="setQuick('SOL','USD')">SOL → USD</button>
+        <button class="quick-btn" onclick="setQuick('ETH','BTC')">ETH → BTC</button>
+        <button class="quick-btn" onclick="setQuick('USD','UAH')">USD → UAH</button>
+        <button class="quick-btn" onclick="setQuick('BTC','UAH')">BTC → UAH</button>
+        <button class="quick-btn" onclick="setQuick('USD','EUR')">USD → EUR</button>
+      </div>
+    </div>
+
+    <!-- Converter widget -->
+    <div class="bg-sf-min border border-brd p-5 flex flex-col gap-3">
+      <div class="flex items-center justify-between mb-1">
+        <h2 class="font-semibold text-base text-pri-c font-mono tracking-widest">CONVERT</h2>
+        <div class="flex items-center gap-2 text-[10px] font-mono">
+          <span id="statusDot" class="w-2 h-2 rounded-full bg-tx2"></span>
+          <span id="statusLabel" class="text-tx2">loading rates...</span>
+        </div>
+      </div>
+
+      <!-- FROM -->
+      <div>
+        <div class="text-[10px] text-tx2 uppercase tracking-widest font-mono mb-1.5">From</div>
+        <div class="cur-input-wrap">
+          <div class="cur-tag" onclick="document.getElementById('fromSearch').focus()">
+            <span id="fromDot" class="w-2 h-2 rounded-full bg-tx2 shrink-0"></span>
+            <input id="fromSearch" value="BTC" placeholder="BTC" autocomplete="off"
+              style="width:56px" oninput="onCurInput('from')"/>
+          </div>
+          <input id="fromAmt" type="number" value="1" min="0" placeholder="0"
+            class="amt-input" oninput="calc()"/>
+        </div>
+        <div id="fromName" class="text-[10px] text-tx2 font-mono mt-1 pl-1">Bitcoin</div>
+      </div>
+
+      <!-- Swap -->
+      <div class="flex justify-center">
+        <button onclick="swapCur()"
+          class="w-9 h-9 rounded-full border border-brd bg-sf-ctr flex items-center justify-center hover:bg-sf-hi hover:border-pri-c transition-colors">
+          <span class="material-symbols-outlined text-pri-c" style="font-size:18px">swap_vert</span>
+        </button>
+      </div>
+
+      <!-- TO -->
+      <div>
+        <div class="text-[10px] text-tx2 uppercase tracking-widest font-mono mb-1.5">To</div>
+        <div class="cur-input-wrap">
+          <div class="cur-tag" onclick="document.getElementById('toSearch').focus()">
+            <span id="toDot" class="w-2 h-2 rounded-full bg-tx2 shrink-0"></span>
+            <input id="toSearch" value="USD" placeholder="USD" autocomplete="off"
+              style="width:56px" oninput="onCurInput('to')"/>
+          </div>
+          <div id="toAmt" class="flex-1 text-right font-mono text-xl text-pri px-4 py-2.5">—</div>
+        </div>
+        <div id="toName" class="text-[10px] text-tx2 font-mono mt-1 pl-1">US Dollar</div>
+      </div>
+
+      <!-- Rate info -->
+      <div class="border-t border-brd pt-3 mt-1 space-y-1.5 font-mono text-xs">
+        <div class="flex justify-between">
+          <span class="text-tx2">Exchange rate</span>
+          <span id="rateDisplay" class="text-tx">—</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-tx2">Source</span>
+          <span class="text-pri-c">Binance Spot + ExchangeRate API</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-tx2">Updated</span>
+          <span id="lastUpdated" class="text-tx2">—</span>
+        </div>
+      </div>
+
+      <!-- Copy button -->
+      <button onclick="copyResult()"
+        class="mt-1 border border-brd text-tx2 font-mono text-xs px-4 py-2 hover:border-pri-c hover:text-pri-c transition-colors flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined" style="font-size:14px">content_copy</span>
+        Copy result
+      </button>
+    </div>
+  </div>
+  </div>
+
+</main>
+
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 bg-sf-ctr border-t border-brd">
+<a href="index.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">home</span><span class="text-[9px] mt-0.5 font-mono">Home</span></a>
+<a href="spread.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">swap_vert</span><span class="text-[9px] mt-0.5 font-mono">Spread</span></a>
+<a href="funding.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">schedule</span><span class="text-[9px] mt-0.5 font-mono">Funding</span></a>
+<a href="chart.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">monitoring</span><span class="text-[9px] mt-0.5 font-mono">Charts</span></a>
+<a href="converter.html" class="flex flex-col items-center justify-center text-pri w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">currency_exchange</span><span class="text-[9px] mt-0.5 font-mono">Converter</span></a>
+</nav>
+
+<script>
+const API = window.location.origin;
+
+// ── Стан ─────────────────────────────────────────────────────────────────────
+let rateMap   = {};   // { "BTC": 64230, "EUR": 0.922, "UAH": 41.5, ... } — все відносно USD
+let fiatList  = [];   // [{ code, name, symbol }]
+let fromCur   = "BTC";
+let toCur     = "USD";
+
+// Назви токенів
+const CRYPTO_NAMES = {
+  BTC:"Bitcoin",ETH:"Ethereum",SOL:"Solana",BNB:"Binance Coin",
+  XRP:"Ripple",DOGE:"Dogecoin",ADA:"Cardano",AVAX:"Avalanche",
+  DOT:"Polkadot",LINK:"Chainlink",UNI:"Uniswap",ATOM:"Cosmos",
+  LTC:"Litecoin",BCH:"Bitcoin Cash",NEAR:"NEAR Protocol",APT:"Aptos",
+  OP:"Optimism",ARB:"Arbitrum",INJ:"Injective",SUI:"Sui",
+  TRX:"TRON",TON:"Toncoin",SHIB:"Shiba Inu",MATIC:"Polygon",FTM:"Fantom",
+  USDT:"Tether USD",USDC:"USD Coin",
+};
+const FIAT_NAMES = {
+  USD:"US Dollar",EUR:"Euro",UAH:"Ukrainian Hryvnia",GBP:"British Pound",
+  JPY:"Japanese Yen",CHF:"Swiss Franc",CAD:"Canadian Dollar",AUD:"Australian Dollar",
+  SGD:"Singapore Dollar",HKD:"Hong Kong Dollar",KRW:"South Korean Won",
+  BRL:"Brazilian Real",MXN:"Mexican Peso",PLN:"Polish Zloty",CZK:"Czech Koruna",
+  SEK:"Swedish Krona",NOK:"Norwegian Krone",DKK:"Danish Krone",
+  TRY:"Turkish Lira",INR:"Indian Rupee",CNY:"Chinese Yuan",
+};
+const FIAT_CODES = Object.keys(FIAT_NAMES);
+
+// ── Конвертація ───────────────────────────────────────────────────────────────
+function toUSD(cur, amt) {
+  if (!cur || !rateMap[cur]) return 0;
+  if (FIAT_CODES.includes(cur)) {
+    // Для фіату rateMap зберігає кількість одиниць за 1 USD
+    return amt / rateMap[cur];
+  }
+  return amt * rateMap[cur]; // Крипто: ціна в USD
+}
+function fromUSD(cur, usd) {
+  if (!cur || !rateMap[cur]) return 0;
+  if (FIAT_CODES.includes(cur)) {
+    return usd * rateMap[cur];
+  }
+  return usd / rateMap[cur];
+}
+
+function fmtResult(n, cur) {
+  if (n === null || n === undefined || isNaN(n)) return "—";
+  if (n === 0) return "0";
+  const abs = Math.abs(n);
+  if (abs < 0.000001) return n.toFixed(10);
+  if (abs < 0.0001)   return n.toFixed(8);
+  if (abs < 0.01)     return n.toFixed(6);
+  if (abs < 1)        return n.toFixed(5);
+  if (abs < 100)      return n.toFixed(4);
+  if (abs < 10000)    return n.toFixed(2);
+  return n.toLocaleString("en-US", {maximumFractionDigits: 2});
+}
+
+function getCurName(cur) {
+  return CRYPTO_NAMES[cur] || FIAT_NAMES[cur] || cur;
+}
+
+function isFiat(cur) {
+  return FIAT_CODES.includes(cur);
+}
+
+// ── Розрахунок ────────────────────────────────────────────────────────────────
+function calc() {
+  const amt = parseFloat(document.getElementById("fromAmt").value) || 0;
+  const usd = toUSD(fromCur, amt);
+  const res = fromUSD(toCur, usd);
+
+  document.getElementById("toAmt").textContent = fmtResult(res, toCur);
+
+  // Rate display
+  const rate1 = fromUSD(toCur, toUSD(fromCur, 1));
+  document.getElementById("rateDisplay").textContent =
+    `1 ${fromCur} = ${fmtResult(rate1, toCur)} ${toCur}`;
+
+  // Multi-output
+  updateMultiOutput(usd);
+}
+
+// ── Multi-output ──────────────────────────────────────────────────────────────
+function updateMultiOutput(usdValue) {
+  const outputs = [
+    {cur:"USD", label:"USD", sym:"$"},
+    {cur:"EUR", label:"EUR", sym:"€"},
+    {cur:"UAH", label:"UAH", sym:"₴"},
+    {cur:"GBP", label:"GBP", sym:"£"},
+    {cur:"BTC", label:"BTC", sym:"₿"},
+    {cur:"ETH", label:"ETH", sym:"Ξ"},
+  ].filter(o => o.cur !== fromCur && o.cur !== toCur);
+
+  // Оновити заголовок
+  const eqTitle = document.getElementById("eqTitle");
+  if (eqTitle) eqTitle.textContent = fromCur;
+
+  const el = document.getElementById("multiOutput");
+  el.innerHTML = outputs.map(o => {
+    const val = fromUSD(o.cur, usdValue);
+    const formatted = fmtResult(val, o.cur);
+    const amt = document.getElementById("fromAmt").value || "1";
+    return `
+    <div class="flex justify-between items-center px-3 py-2 border-b border-brd/40 font-mono text-xs hover:bg-sf-hi cursor-pointer"
+         onclick="setQuick('${fromCur}','${o.cur}')">
+      <div class="flex items-center gap-2">
+        <span class="text-tx2 w-8">${o.label}</span>
+        <span class="text-tx2 text-[10px]">${getCurName(o.cur)}</span>
+      </div>
+      <span class="${isFiat(o.cur) ? 'text-tx' : 'text-pri'}">${o.sym}${formatted}</span>
+    </div>`;
+  }).join("");
+}
+
+// ── Swap ──────────────────────────────────────────────────────────────────────
+function swapCur() {
+  const tmp = fromCur;
+  setFrom(toCur);
+  setTo(tmp);
+  calc();
+}
+
+// ── Встановити валюту ─────────────────────────────────────────────────────────
+function setFrom(cur) {
+  const upper = cur.toUpperCase().replace("USDT","").replace("/","");
+  if (!rateMap[upper] && upper !== "USD" && upper !== "USDT") return;
+  fromCur = upper === "USDT" ? "USD" : upper;
+  document.getElementById("fromSearch").value = fromCur;
+  document.getElementById("fromName").textContent = getCurName(fromCur);
+  const dot = document.getElementById("fromDot");
+  dot.style.background = isFiat(fromCur) ? "#bacac2" : "#46f1c5";
+  calc();
+}
+
+function setTo(cur) {
+  const upper = cur.toUpperCase().replace("USDT","").replace("/","");
+  toCur = upper === "USDT" ? "USD" : upper;
+  document.getElementById("toSearch").value = toCur;
+  document.getElementById("toName").textContent = getCurName(toCur);
+  const dot = document.getElementById("toDot");
+  dot.style.background = isFiat(toCur) ? "#bacac2" : "#46f1c5";
+  calc();
+}
+
+// ── Quick pairs ───────────────────────────────────────────────────────────────
+function setQuick(f, t) {
+  setFrom(f);
+  setTo(t);
+  document.getElementById("fromAmt").value = 1;
+  calc();
+}
+
+// ── Copy ──────────────────────────────────────────────────────────────────────
+function copyResult() {
+  const res  = document.getElementById("toAmt").textContent;
+  const rate = document.getElementById("rateDisplay").textContent;
+  navigator.clipboard.writeText(`${res} ${toCur}\n${rate}`).then(() => {
+    const btn = event.currentTarget;
+    btn.textContent = "✓ Copied!";
+    btn.style.color = "#46f1c5";
+    btn.style.borderColor = "#46f1c5";
+    setTimeout(() => {
+      btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px">content_copy</span> Copy result';
+      btn.style.color = "";
+      btn.style.borderColor = "";
+    }, 1500);
+  });
+}
+
+// ── Пошук валюти в полях ──────────────────────────────────────────────────────
+function onCurInput(side) {
+  // Живий пошук — намагаємось знайти валюту в rateMap
+  const input = document.getElementById(side === "from" ? "fromSearch" : "toSearch");
+  const val   = input.value.toUpperCase().replace("USDT","").replace("/","");
+  if (rateMap[val] || val === "USD") {
+    if (side === "from") setFrom(val);
+    else setTo(val);
+  }
+}
+
+// ── Завантаження курсів ───────────────────────────────────────────────────────
+async function loadRates() {
+  try {
+    const res  = await fetch(`${API}/api/rates`);
+    const json = await res.json();
+    rateMap  = json.rates  || {};
+    fiatList = json.fiat_list || [];
+
+    // Fallback якщо фіат не прийшов
+    if (!rateMap.UAH) rateMap.UAH = 41.5;
+    if (!rateMap.EUR) rateMap.EUR = 0.922;
+
+    calc();
+    renderFiatRates();
+
+    const d = new Date(json.ts);
+    document.getElementById("lastUpdated").textContent = d.toLocaleTimeString();
+    document.getElementById("statusDot").className    = "w-2 h-2 rounded-full bg-grn";
+    document.getElementById("statusLabel").textContent = "live rates";
+    document.getElementById("statusLabel").className  = "text-grn font-mono text-[10px]";
+
+  } catch(e) {
+    console.warn("Flask unavailable, using fallback");
+    rateMap = {BTC:64230,ETH:3450,SOL:145,BNB:590,USDT:1,USD:1,EUR:0.922,UAH:41.5,GBP:0.79};
+    calc();
+    document.getElementById("statusLabel").textContent = "fallback rates";
+  }
+}
+
+function renderFiatRates() {
+  const el = document.getElementById("fiatRates");
+  const entries = fiatList.length > 0 ? fiatList :
+    Object.entries(FIAT_NAMES).map(([code,name]) => ({code, name, symbol:code}));
+
+  el.innerHTML = entries.map(f => {
+    const rate = rateMap[f.code];
+    if (!rate) return "";
+    const val = rate >= 1 ? rate.toFixed(2) : rate.toFixed(4);
+    return `
+    <div class="flex justify-between items-center px-4 h-9 border-b border-brd/30 font-mono text-[12px] hover:bg-sf-hi cursor-pointer"
+         onclick="setTo('${f.code}')">
+      <div class="flex items-center gap-2">
+        <span class="text-tx font-medium">${f.code}</span>
+        <span class="text-tx2 text-[10px]">${f.name}</span>
+      </div>
+      <span class="text-tx2">${val}</span>
+    </div>`;
+  }).join("");
+}
+
+// ── Autocomplete для FROM/TO полів ────────────────────────────────────────────
+// Комбінований список: крипто + фіат
+function buildCombinedList() {
+  const fiat = Object.entries(FIAT_NAMES).map(([code, name]) => ({
+    symbol: code, base: code, name, price: 0, change: 0, up: true, isFiat: true
+  }));
+  return fiat;
+}
+
+// From field autocomplete
+initAutocomplete(document.getElementById("fromSearch"), (sym, base) => {
+  setFrom(base);
+}, { maxResults: 8 });
+
+// To field autocomplete
+initAutocomplete(document.getElementById("toSearch"), (sym, base) => {
+  setTo(base);
+}, { maxResults: 8 });
+
+// Nav search autocomplete
+const navInput = document.getElementById("navSearch");
+if (navInput) initAutocomplete(navInput, (sym, base) => {
+  window.location.href = "token.html?symbol=" + base;
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadRates();
+setInterval(loadRates, 30000);
+
+// Ініціалізація відображення
+document.getElementById("fromName").textContent = getCurName(fromCur);
+document.getElementById("toName").textContent   = getCurName(toCur);
+document.getElementById("fromDot").style.background = "#46f1c5";
+document.getElementById("toDot").style.background   = "#bacac2";
+</script>
+</body></html>

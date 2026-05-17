@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AXION TERMINAL — Token</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>tailwind.config={darkMode:"class",theme:{extend:{colors:{"sf":"#111319","sf-low":"#191b22","sf-ctr":"#1d1f26","sf-hi":"#282a30","sf-top":"#33343b","sf-min":"#0c0e14","brd":"#3b4a44","tx":"#e2e2ea","tx2":"#bacac2","pri":"#46f1c5","pri-c":"#00d4aa","grn":"#4ae176","red":"#ffb4ab"},fontFamily:{"sans":["Geist"],"mono":["JetBrains Mono","monospace"]}}}}</script>
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<style>
+body{background:#111319;color:#e2e2ea;-webkit-font-smoothing:antialiased}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.no-sb::-webkit-scrollbar{display:none}.no-sb{-ms-overflow-style:none;scrollbar-width:none}
+a.nav-active{color:#46f1c5;border-bottom:2px solid #46f1c5}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}.pulse-dot{animation:pulse-dot 2s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin .8s linear infinite}
+.tf-btn{border:1px solid #3b4a44;color:#bacac2;font-family:'JetBrains Mono';font-size:11px;padding:3px 10px;cursor:pointer;transition:all .15s}
+.tf-btn:hover,.tf-btn.active{background:#282a30;color:#46f1c5;border-color:#46f1c5}
+</style>
+<script src="autocomplete.js"></script>
+</head>
+<body class="bg-sf text-tx min-h-screen flex flex-col font-sans text-sm">
+
+<!-- NAV -->
+<nav class="hidden md:flex bg-sf border-b border-brd justify-between items-center w-full px-4 h-14 shrink-0">
+  <a href="index.html" class="font-bold text-xl text-pri tracking-tighter flex items-center gap-2"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
+  <div class="flex items-center h-full gap-1 text-xs">
+    <a href="index.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Home</a>
+    <a href="prices.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Prices</a>
+    <a href="spread.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Spread</a>
+    <a href="funding.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Funding</a>
+    <a href="converter.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Converter</a>
+    <a href="chart.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Chart</a>
+  </div>
+  <div class="flex items-center bg-[#12141a] border border-[#2d3139] px-2 h-8">
+    <span class="material-symbols-outlined text-tx2 mr-1" style="font-size:16px">search</span>
+    <input id="navSearch" class="bg-transparent outline-none font-mono text-xs text-tx w-36 p-0" placeholder="Search pair..." autocomplete="off"/>
+  </div>
+</nav>
+<header class="md:hidden flex items-center justify-between px-4 h-12 shrink-0 bg-sf border-b border-brd">
+  <a href="index.html" class="font-bold text-xl text-pri tracking-tighter flex items-center gap-2"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
+  <div><span class="material-symbols-outlined text-tx2" style="font-size:22px">search</span></div>
+</header>
+
+<!-- TOKEN HEADER -->
+<div class="bg-sf-min border-b border-brd px-4 py-3 flex flex-col md:flex-row md:items-center gap-3 md:gap-8 shrink-0">
+  <!-- Back + Symbol -->
+  <div class="flex items-center gap-3">
+    <a href="index.html" class="flex items-center text-tx2 hover:text-pri transition-colors">
+      <span class="material-symbols-outlined" style="font-size:20px">arrow_back</span>
+    </a>
+    <div>
+      <div class="flex items-center gap-2">
+        <span id="tokenSymbol" class="font-mono text-xl font-bold text-tx">—</span>
+        <span id="tokenName" class="text-tx2 text-xs">—</span>
+        <span class="text-[10px] font-mono text-tx2 border border-brd px-1.5 py-0.5">SPOT</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Price stats -->
+  <div class="flex items-baseline gap-3">
+    <span id="tokenPrice" class="font-mono text-2xl font-bold text-pri">—</span>
+    <span id="tokenChange" class="font-mono text-sm">—</span>
+  </div>
+
+  <div class="flex gap-5 font-mono text-xs text-tx2">
+    <div>24h High <span id="tokenHigh" class="text-tx ml-1">—</span></div>
+    <div>24h Low  <span id="tokenLow" class="text-tx ml-1">—</span></div>
+    <div>Vol 24h  <span id="tokenVol" class="text-tx ml-1">—</span></div>
+  </div>
+
+  <div class="ml-auto hidden md:flex items-center gap-2 text-xs">
+    <span id="liveDot" class="w-2 h-2 rounded-full bg-tx2"></span>
+    <span id="liveLabel" class="font-mono text-tx2">LOADING</span>
+  </div>
+</div>
+
+<!-- MAIN LAYOUT -->
+<div class="flex flex-col md:flex-row flex-1 overflow-y-auto md:overflow-hidden">
+
+  <!-- LEFT: Chart -->
+  <div class="flex flex-col border-r border-brd" style="min-height:55vh">
+
+    <!-- TF controls -->
+    <div class="flex items-center gap-1.5 px-3 py-2 border-b border-brd bg-sf shrink-0">
+      <span class="text-[10px] text-tx2 font-mono mr-1">Interval:</span>
+      <button class="tf-btn" onclick="setTF('1')">1m</button>
+      <button class="tf-btn" onclick="setTF('5')">5m</button>
+      <button class="tf-btn" onclick="setTF('15')">15m</button>
+      <button class="tf-btn active" id="tf-60" onclick="setTF('60')">1H</button>
+      <button class="tf-btn" onclick="setTF('240')">4H</button>
+      <button class="tf-btn" onclick="setTF('D')">1D</button>
+      <button class="tf-btn" onclick="setTF('W')">1W</button>
+    </div>
+
+    <!-- TradingView widget -->
+    <div id="tv-chart" style="height:clamp(280px,45vh,600px);width:100%"></div>
+  </div>
+
+  <!-- RIGHT: Funding + Spreads -->
+  <div class="md:w-[360px] shrink-0 flex flex-col overflow-y-auto no-sb bg-sf max-h-[50vh] md:max-h-none">
+
+    <!-- FUNDING SECTION -->
+    <div class="border-b border-brd">
+      <div class="h-9 bg-sf-ctr border-b border-brd flex items-center justify-between px-4">
+        <span class="font-mono text-[10px] text-tx2 uppercase tracking-widest">Funding Rates</span>
+        <div id="fundingLoading" class="spin material-symbols-outlined text-tx2" style="font-size:14px">refresh</div>
+      </div>
+
+      <!-- Header -->
+      <div class="grid grid-cols-[1fr_90px_90px] items-center h-7 px-4 font-mono text-[9px] text-tx2 uppercase tracking-wider border-b border-brd">
+        <div>Exchange</div>
+        <div class="text-right">Rate (8H)</div>
+        <div class="text-right">Annual</div>
+      </div>
+
+      <div id="fundingBody">
+        <div class="flex items-center justify-center py-6 text-tx2 font-mono text-xs gap-2">
+          <span class="material-symbols-outlined spin" style="font-size:16px">refresh</span>Loading...
+        </div>
+      </div>
+    </div>
+
+    <!-- SPREADS SECTION -->
+    <div class="flex-1">
+      <div class="h-9 bg-sf-ctr border-b border-brd flex items-center justify-between px-4">
+        <span class="font-mono text-[10px] text-tx2 uppercase tracking-widest">Spread Opportunities</span>
+        <div id="spreadLoading" class="spin material-symbols-outlined text-tx2" style="font-size:14px">refresh</div>
+      </div>
+
+      <!-- Header -->
+      <div class="grid grid-cols-[1fr_1fr_80px] items-center h-7 px-4 font-mono text-[9px] text-tx2 uppercase tracking-wider border-b border-brd">
+        <div>High (Bid)</div>
+        <div>Low (Ask)</div>
+        <div class="text-right">Spread %</div>
+      </div>
+
+      <div id="spreadBody">
+        <div class="flex items-center justify-center py-6 text-tx2 font-mono text-xs gap-2">
+          <span class="material-symbols-outlined spin" style="font-size:16px">refresh</span>Loading...
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MOBILE NAV -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 bg-sf-ctr border-t border-brd">
+<a href="index.html" class="flex flex-col items-center justify-center text-pri w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">home</span><span class="text-[9px] mt-0.5 font-mono">Home</span></a>
+<a href="spread.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">swap_vert</span><span class="text-[9px] mt-0.5 font-mono">Spread</span></a>
+<a href="funding.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">schedule</span><span class="text-[9px] mt-0.5 font-mono">Funding</span></a>
+<a href="chart.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">monitoring</span><span class="text-[9px] mt-0.5 font-mono">Charts</span></a>
+<a href="converter.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">currency_exchange</span><span class="text-[9px] mt-0.5 font-mono">Converter</span></a>
+</nav>
+
+<script>
+// ── Конфіг ──────────────────────────────────────────────────────────────────
+const API = window.location.origin;
+
+const TOKEN_NAMES = {
+  BTC:"Bitcoin", ETH:"Ethereum", SOL:"Solana", BNB:"Binance Coin",
+  XRP:"Ripple", DOGE:"Dogecoin", ADA:"Cardano", AVAX:"Avalanche",
+  SHIB:"Shiba Inu", DOT:"Polkadot", LINK:"Chainlink", MATIC:"Polygon",
+  UNI:"Uniswap", ATOM:"Cosmos", LTC:"Litecoin", BCH:"Bitcoin Cash",
+  NEAR:"NEAR Protocol", APT:"Aptos", OP:"Optimism", ARB:"Arbitrum",
+  PEPE:"Pepe", WIF:"dogwifhat", FLOKI:"Floki", TRX:"TRON",
+  TON:"Toncoin", SUI:"Sui", FIL:"Filecoin", ICP:"Internet Computer",
+};
+
+// ── Парсинг URL ──────────────────────────────────────────────────────────────
+const params  = new URLSearchParams(window.location.search);
+let rawSymbol = (params.get("symbol") || "BTC").toUpperCase().replace("USDT","").replace("/","");
+const symbol  = rawSymbol + "USDT";       // BTCUSDT
+const tvSymbol = "BINANCE:" + symbol;     // BINANCE:BTCUSDT
+
+// ── Заголовок сторінки ───────────────────────────────────────────────────────
+document.title = `AXION TERMINAL — ${rawSymbol}`;
+document.getElementById("tokenSymbol").textContent = rawSymbol + "/USDT";
+document.getElementById("tokenName").textContent   = TOKEN_NAMES[rawSymbol] || rawSymbol;
+
+// ── Форматування ─────────────────────────────────────────────────────────────
+function fmt(n) {
+  if (!n && n !== 0) return "—";
+  if (n < 0.00001) return n.toFixed(8);
+  if (n < 0.01)    return n.toFixed(6);
+  if (n < 1)       return n.toFixed(4);
+  if (n < 100)     return n.toFixed(3);
+  return n.toLocaleString("en-US", {maximumFractionDigits:2});
+}
+function fmtVol(n) {
+  if (!n) return "—";
+  if (n >= 1e9) return (n/1e9).toFixed(2) + "B";
+  if (n >= 1e6) return (n/1e6).toFixed(2) + "M";
+  return n.toLocaleString();
+}
+
+// ── TradingView Chart ────────────────────────────────────────────────────────
+let tvWidget, currentTF = "60";
+function createChart(tf) {
+  document.getElementById("tv-chart").innerHTML = "";
+  tvWidget = new TradingView.widget({
+    autosize:        true,
+    symbol:          tvSymbol,
+    interval:        tf || currentTF,
+    timezone:        "Etc/UTC",
+    theme:           "dark",
+    style:           "1",
+    locale:          "en",
+    toolbar_bg:      "#111319",
+    enable_publishing: false,
+    hide_top_toolbar:  true,
+    hide_legend:       false,
+    save_image:        false,
+    container_id:      "tv-chart",
+    backgroundColor:   "#111319",
+    gridColor:         "#1d1f26",
+    studies:           ["MASimple@tv-basicstudies"],
+  });
+}
+function setTF(tf) {
+  currentTF = tf;
+  document.querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
+  const btn = document.getElementById("tf-" + tf);
+  if (btn) btn.classList.add("active");
+  createChart(tf);
+}
+createChart();
+
+// ── Ціна ─────────────────────────────────────────────────────────────────────
+async function loadPrice() {
+  try {
+    const res  = await fetch(`${API}/api/prices?symbol=${symbol}`);
+    const json = await res.json();
+    const data = json.data || [];
+    if (!data.length) return;
+
+    // Binance — найповніше джерело, беремо його першим
+    const ref = data.find(d => d.exchange === "binance") || data[0];
+
+    document.getElementById("tokenPrice").textContent = "$" + fmt(ref.price);
+
+    const chg = ref.change24h;
+    const chEl = document.getElementById("tokenChange");
+    chEl.textContent = (chg >= 0 ? "↑ +" : "↓ ") + chg.toFixed(2) + "%";
+    chEl.className   = "font-mono text-sm " + (chg >= 0 ? "text-grn" : "text-red");
+
+    // High/Low/Vol — перший запис де значення не нулі
+    const statsRef = data.find(d => d.high24h > 0 && d.low24h > 0) || ref;
+    document.getElementById("tokenHigh").textContent = statsRef.high24h > 0 ? "$" + fmt(statsRef.high24h) : "—";
+    document.getElementById("tokenLow").textContent  = statsRef.low24h  > 0 ? "$" + fmt(statsRef.low24h)  : "—";
+    document.getElementById("tokenVol").textContent  = statsRef.volume  > 0 ? fmtVol(statsRef.volume)     : "—";
+
+    document.getElementById("liveDot").className   = "w-2 h-2 rounded-full bg-grn pulse-dot";
+    document.getElementById("liveLabel").className = "font-mono text-grn text-xs";
+    document.getElementById("liveLabel").textContent = "LIVE";
+  } catch(e) {
+    document.getElementById("liveLabel").textContent = "OFFLINE";
+  }
+}
+
+// ── Funding Rates ─────────────────────────────────────────────────────────────
+async function loadFunding() {
+  try {
+    const res  = await fetch(`${API}/api/funding`);
+    const json = await res.json();
+    const all  = json.data || [];
+
+    // Фільтр по символу
+    const filtered = all.filter(d => d.symbol === symbol);
+
+    const body    = document.getElementById("fundingBody");
+    const spinner = document.getElementById("fundingLoading");
+    spinner.classList.remove("spin");
+    spinner.style.display = "none";
+
+    if (!filtered.length) {
+      body.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-8 gap-2">
+          <span class="material-symbols-outlined text-tx2" style="font-size:28px">info</span>
+          <span class="font-mono text-xs text-tx2">No futures data for ${rawSymbol}</span>
+        </div>`;
+      return;
+    }
+
+    body.innerHTML = filtered.map(d => {
+      const rc   = d.positive ? "text-grn" : "text-red";
+      const sign = d.positive ? "+" : "";
+      return `
+      <div class="grid grid-cols-[1fr_90px_90px] items-center h-10 px-4 border-b border-brd/40 font-mono text-[12px] hover:bg-sf-hi transition-colors cursor-default">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full" style="background:${d.color}"></span>
+          <span>${d.exchange}</span>
+        </div>
+        <div class="text-right ${rc}">${sign}${d.rate.toFixed(4)}%</div>
+        <div class="text-right ${d.annualized >= 0 ? "text-grn" : "text-red"} text-[11px]">${sign}${d.annualized.toFixed(1)}%</div>
+      </div>`;
+    }).join("");
+
+  } catch(e) {
+    document.getElementById("fundingBody").innerHTML =
+      `<div class="py-6 text-center font-mono text-xs text-red">Failed to load funding</div>`;
+  }
+}
+
+// ── Spreads ───────────────────────────────────────────────────────────────────
+async function loadSpreads() {
+  try {
+    const res  = await fetch(`${API}/api/spread?symbols=${symbol}`);
+    const json = await res.json();
+    const all  = json.data || [];
+
+    const body    = document.getElementById("spreadBody");
+    const spinner = document.getElementById("spreadLoading");
+    spinner.classList.remove("spin");
+    spinner.style.display = "none";
+
+    if (!all.length) {
+      body.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-10 gap-3">
+          <span class="material-symbols-outlined text-tx2" style="font-size:32px">search_off</span>
+          <span class="font-mono text-xs text-tx2">No spread opportunities found</span>
+          <span class="font-mono text-[10px] text-tx2/60">Prices are equal across exchanges</span>
+        </div>`;
+      return;
+    }
+
+    body.innerHTML = all.map(s => {
+      const hot = s.hot
+        ? `<span class="ml-1 text-[9px] text-pri-c border border-pri-c/30 px-1">HOT</span>`
+        : "";
+      return `
+      <div class="grid grid-cols-[1fr_1fr_80px] items-center min-h-[44px] px-4 py-2 border-b border-brd/40 font-mono text-[12px] hover:bg-sf-hi transition-colors ${s.hot ? "bg-grn/5" : ""}">
+        <div>
+          <div class="flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-sm" style="background:${s.color_a}"></span>
+            <span class="text-tx2 text-[10px]">${s.exchange_a}</span>
+          </div>
+          <div class="text-pri text-[11px]">${fmt(s.price_a)}</div>
+        </div>
+        <div>
+          <div class="flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-sm" style="background:${s.color_b}"></span>
+            <span class="text-tx2 text-[10px]">${s.exchange_b}</span>
+          </div>
+          <div class="text-pri text-[11px]">${fmt(s.price_b)}</div>
+        </div>
+        <div class="text-right">
+          <span class="text-grn font-semibold">+${s.spread_pct.toFixed(4)}%</span>${hot}
+        </div>
+      </div>`;
+    }).join("");
+
+  } catch(e) {
+    document.getElementById("spreadBody").innerHTML =
+      `<div class="py-6 text-center font-mono text-xs text-red">Failed to load spreads</div>`;
+  }
+}
+
+// ── Пошук ─────────────────────────────────────────────────────────────────────
+function goToken(sym) {
+  window.location.href = "token.html?symbol=" + sym.replace("USDT","").replace("/","").toUpperCase();
+}
+
+// ── Запуск ────────────────────────────────────────────────────────────────────
+loadPrice();
+loadFunding();
+loadSpreads();
+
+setInterval(loadPrice,   10000);
+setInterval(loadFunding, 30000);
+setInterval(loadSpreads, 15000);
+// Nav autocomplete
+const navInput = document.getElementById("navSearch");
+if (navInput) initAutocomplete(navInput, (sym, base) => goToken(base));
+</script>
+</body></html>

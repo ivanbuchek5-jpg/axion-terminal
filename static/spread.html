@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AXION TERMINAL — Spread</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>tailwind.config={darkMode:"class",theme:{extend:{colors:{"sf":"#111319","sf-low":"#191b22","sf-ctr":"#1d1f26","sf-hi":"#282a30","sf-top":"#33343b","sf-min":"#0c0e14","brd":"#3b4a44","tx":"#e2e2ea","tx2":"#bacac2","pri":"#46f1c5","pri-c":"#00d4aa","grn":"#4ae176","red":"#ffb4ab"},fontFamily:{"sans":["Geist"],"mono":["JetBrains Mono","monospace"]}}}}</script>
+<style>
+body{background:#111319;color:#e2e2ea;-webkit-font-smoothing:antialiased}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.no-sb::-webkit-scrollbar{display:none}.no-sb{-ms-overflow-style:none;scrollbar-width:none}
+a.nav-active{color:#46f1c5;border-bottom:2px solid #46f1c5}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}.pulse-dot{animation:pulse-dot 2s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin .8s linear infinite}
+.row-flash{animation:flash .4s ease}
+@keyframes flash{0%{background:#46f1c520}100%{background:transparent}}
+</style>
+<script src="autocomplete.js"></script>
+</head>
+<body class="bg-sf text-tx h-screen w-screen overflow-hidden flex flex-col font-sans text-sm">
+
+<nav class="hidden md:flex bg-sf border-b border-brd justify-between items-center w-full px-4 h-14 shrink-0">
+  <a href="index.html" class="font-bold text-xl text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
+  <div class="flex items-center h-full gap-1 text-xs">
+    <a href="index.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Home</a>
+    <a href="prices.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Prices</a>
+    <a href="spread.html" class="nav-active h-full flex items-center px-4 text-[14px]">Spread</a>
+    <a href="funding.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Funding</a>
+    <a href="converter.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Converter</a>
+    <a href="chart.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Chart</a>
+  </div>
+  <div class="flex items-center bg-[#12141a] border border-[#2d3139] px-2 h-8">
+    <span class="material-symbols-outlined text-tx2 mr-1" style="font-size:16px">search</span>
+    <input id="searchInput" class="bg-transparent outline-none font-mono text-xs text-tx w-36 p-0" placeholder="Search pair..."/>
+  </div>
+</nav>
+<header class="md:hidden flex items-center justify-between px-4 h-12 shrink-0 bg-sf border-b border-brd">
+  <a href="index.html" class="font-bold text-lg text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
+  <div class="flex gap-3"><span class="material-symbols-outlined text-tx2" style="font-size:22px">search</span></div>
+</header>
+
+<main class="flex-1 overflow-y-auto no-sb p-4 flex flex-col gap-4 pb-20 md:pb-4">
+
+  <!-- Page Header -->
+  <div class="bg-sf-min border border-brd p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <div>
+      <h1 class="font-semibold text-xl text-tx">Global Spread Scanner</h1>
+      <p class="text-xs text-tx2 mt-1">Cross-exchange spread analysis — Binance · Bybit · MEXC · Gate.io</p>
+    </div>
+    <div class="flex items-center gap-3 flex-wrap">
+      <!-- Live indicator -->
+      <div class="flex items-center gap-1.5 text-xs">
+        <span id="liveDot" class="w-2 h-2 bg-grn rounded-full pulse-dot"></span>
+        <span id="liveLabel" class="text-grn font-mono">LOADING...</span>
+      </div>
+      <!-- Min spread filter -->
+      <div class="flex items-center gap-2 font-mono text-xs">
+        <span class="text-tx2">Min spread:</span>
+        <select id="minSpread" onchange="renderTable()" class="bg-sf-ctr border border-brd text-tx px-2 py-1 outline-none">
+          <option value="0" selected>All</option>
+          <option value="0.1">≥ 0.1%</option>
+          <option value="0.3">≥ 0.3%</option>
+          <option value="0.5">≥ 0.5%</option>
+          <option value="1.0">≥ 1.0%</option>
+        </select>
+      </div>
+      <!-- Refresh button -->
+      <button onclick="loadSpread()" class="border border-brd text-tx2 text-[10px] px-3 py-1 font-mono hover:border-pri-c hover:text-pri-c flex items-center gap-1">
+        <span id="refreshIcon" class="material-symbols-outlined" style="font-size:13px">refresh</span> Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="hidden md:grid grid-cols-4 gap-3">
+    <div class="bg-sf-min border border-brd px-4 py-3">
+      <div class="text-[10px] text-tx2 uppercase tracking-widest font-mono">Pairs Scanned</div>
+      <div id="statPairs" class="font-mono text-xl text-tx mt-1">—</div>
+    </div>
+    <div class="bg-sf-min border border-brd px-4 py-3">
+      <div class="text-[10px] text-tx2 uppercase tracking-widest font-mono">Best Spread</div>
+      <div id="statBest" class="font-mono text-xl text-grn mt-1">—</div>
+    </div>
+    <div class="bg-sf-min border border-brd px-4 py-3">
+      <div class="text-[10px] text-tx2 uppercase tracking-widest font-mono">Avg Spread</div>
+      <div id="statAvg" class="font-mono text-xl text-pri mt-1">—</div>
+    </div>
+    <div class="bg-sf-min border border-brd px-4 py-3">
+      <div class="text-[10px] text-tx2 uppercase tracking-widest font-mono">Hot Opps (≥0.5%)</div>
+      <div id="statHot" class="font-mono text-xl text-pri-c mt-1">—</div>
+    </div>
+  </div>
+
+  <!-- Spread Table -->
+  <div class="bg-sf-min border border-brd flex flex-col">
+    <!-- Desktop header -->
+    <div class="hidden md:grid grid-cols-[180px_1fr_1fr_160px] items-center h-8 px-4 border-b border-brd bg-sf-ctr font-mono text-[10px] text-tx2 uppercase tracking-widest">
+      <div>Pair</div>
+      <div>Exchange A (High)</div>
+      <div>Exchange B (Low)</div>
+      <div class="text-right">Spread %</div>
+    </div>
+    <!-- Mobile header -->
+    <div class="md:hidden grid grid-cols-[1fr_80px_80px_70px] items-center h-8 px-4 border-b border-brd bg-sf-ctr font-mono text-[10px] text-tx2 uppercase">
+      <div>Pair</div><div class="text-right">High</div><div class="text-right">Low</div><div class="text-right">Sprd</div>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loadingState" class="flex flex-col items-center justify-center py-16 gap-3">
+      <span class="material-symbols-outlined text-pri spin" style="font-size:32px">refresh</span>
+      <span class="font-mono text-xs text-tx2">Fetching data from exchanges...</span>
+    </div>
+
+    <!-- Error state -->
+    <div id="errorState" class="hidden flex flex-col items-center justify-center py-16 gap-3">
+      <span class="material-symbols-outlined text-red" style="font-size:32px">error</span>
+      <span class="font-mono text-xs text-red">Failed to connect to backend</span>
+      <span class="font-mono text-[10px] text-tx2">Make sure Flask server is running on port 5000</span>
+    </div>
+
+    <!-- Table body -->
+    <div id="tableBody"></div>
+
+    <!-- Footer -->
+    <div class="mt-auto h-8 border-t border-brd flex items-center justify-between px-4 font-mono text-[10px] text-tx2">
+      <span id="footerText">Sorted by spread % descending</span>
+      <span id="lastUpdate" class="text-tx2">—</span>
+    </div>
+  </div>
+</main>
+
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 bg-sf-ctr border-t border-brd">
+<a href="index.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">home</span><span class="text-[9px] mt-0.5 font-mono">Home</span></a>
+<a href="spread.html" class="flex flex-col items-center justify-center text-pri w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">swap_vert</span><span class="text-[9px] mt-0.5 font-mono">Spread</span></a>
+<a href="funding.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">schedule</span><span class="text-[9px] mt-0.5 font-mono">Funding</span></a>
+<a href="chart.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">monitoring</span><span class="text-[9px] mt-0.5 font-mono">Charts</span></a>
+<a href="converter.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">currency_exchange</span><span class="text-[9px] mt-0.5 font-mono">Converter</span></a>
+</nav>
+
+<script>
+const API = window.location.origin;
+let allData = [];
+
+// ── Форматування чисел ──────────────────────────────────────────────────────
+function fmt(n) {
+  if (!n || n === 0) return "—";
+  if (n < 0.0001) return n.toFixed(8);
+  if (n < 0.01)   return n.toFixed(6);
+  if (n < 1)      return n.toFixed(4);
+  if (n < 100)    return n.toFixed(3);
+  return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
+}
+
+// ── Завантаження даних ──────────────────────────────────────────────────────
+async function loadSpread() {
+  const icon = document.getElementById("refreshIcon");
+  const dot  = document.getElementById("liveDot");
+  const label = document.getElementById("liveLabel");
+
+  icon.classList.add("spin");
+  dot.classList.remove("bg-grn");
+  dot.classList.add("bg-tx2");
+  label.textContent = "UPDATING...";
+  label.className = "text-tx2 font-mono";
+
+  try {
+    const res = await fetch(`${API}/api/spread`);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const json = await res.json();
+
+    allData = json.data || [];
+
+    document.getElementById("loadingState").classList.add("hidden");
+    document.getElementById("errorState").classList.add("hidden");
+
+    renderTable();
+    updateStats();
+
+    const d = new Date(json.ts);
+    document.getElementById("lastUpdate").textContent = `Updated: ${d.toLocaleTimeString()}`;
+
+    dot.classList.remove("bg-tx2");
+    dot.classList.add("bg-grn");
+    label.textContent = "LIVE";
+    label.className = "text-grn font-mono";
+
+  } catch (e) {
+    console.error(e);
+    document.getElementById("loadingState").classList.add("hidden");
+    document.getElementById("errorState").classList.remove("hidden");
+    dot.classList.add("bg-red");
+    label.textContent = "ERROR";
+    label.className = "text-red font-mono";
+  }
+
+  icon.classList.remove("spin");
+}
+
+// ── Рендер таблиці ──────────────────────────────────────────────────────────
+function renderTable() {
+  const minSpread = parseFloat(document.getElementById("minSpread").value);
+  const search = document.getElementById("searchInput")?.value.toLowerCase() || "";
+  const tbody = document.getElementById("tableBody");
+
+  const filtered = allData
+    .filter(r => r.spread_pct >= minSpread)
+    .filter(r => !search || r.symbol.toLowerCase().includes(search));
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<div class="flex items-center justify-center py-12 font-mono text-xs text-tx2">No pairs match the filter</div>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(s => {
+    const spClass = "text-grn font-semibold";
+    const bgClass = s.hot ? "bg-grn/5" : "";
+    const hotBadge = s.hot ? `<span class="ml-2 text-[9px] text-pri-c border border-pri-c/30 px-1">HOT</span>` : "";
+
+    return `
+    <div onclick="goToken('${s.symbol}')" class="border-b border-brd hover:bg-sf-hi transition-colors font-mono text-[13px] ${bgClass} row-flash cursor-pointer">
+      <!-- Desktop -->
+      <div class="hidden md:grid grid-cols-[180px_1fr_1fr_160px] items-center h-11 px-4">
+        <div class="font-semibold flex items-center gap-1">${s.symbol.replace("USDT","/USDT")}${hotBadge}</div>
+        <div>
+          <span class="inline-block w-2 h-2 rounded-sm mr-1" style="background:${s.color_a}"></span>
+          <span class="text-tx2 text-[11px]">${s.exchange_a}</span>
+          <span class="text-pri ml-2">${fmt(s.price_a)}</span>
+        </div>
+        <div>
+          <span class="inline-block w-2 h-2 rounded-sm mr-1" style="background:${s.color_b}"></span>
+          <span class="text-tx2 text-[11px]">${s.exchange_b}</span>
+          <span class="text-pri ml-2">${fmt(s.price_b)}</span>
+        </div>
+        <div class="text-right ${spClass}">+${s.spread_pct.toFixed(4)}%</div>
+      </div>
+      <!-- Mobile -->
+      <div class="md:hidden grid grid-cols-[1fr_80px_80px_70px] items-center h-12 px-4">
+        <div>
+          <div class="font-semibold text-xs">${s.symbol.replace("USDT","/USDT")}</div>
+          <div class="text-tx2 text-[10px]">${s.exchange_a} → ${s.exchange_b}</div>
+        </div>
+        <div class="text-right text-xs">${fmt(s.price_a)}</div>
+        <div class="text-right text-xs">${fmt(s.price_b)}</div>
+        <div class="text-right">
+          <span class="px-1.5 py-0.5 text-[11px] font-semibold bg-grn/10 text-grn">+${s.spread_pct.toFixed(3)}%</span>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  document.getElementById("footerText").textContent =
+    `Sorted by spread % — ${filtered.length} pairs shown`;
+}
+
+// ── Статистика ──────────────────────────────────────────────────────────────
+function updateStats() {
+  if (!allData.length) return;
+  const values = allData.map(d => d.spread_pct);
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  const hot = allData.filter(d => d.spread_pct >= 0.5).length;
+
+  document.getElementById("statPairs").textContent = allData.length;
+  document.getElementById("statBest").textContent  = `+${values[0].toFixed(4)}%`;
+  document.getElementById("statAvg").textContent   = `+${avg.toFixed(4)}%`;
+  document.getElementById("statHot").textContent   = hot;
+}
+
+// ── Фільтр по символу ───────────────────────────────────────────────────────
+function filterRows() { renderTable(); }
+function goToken(sym) {
+  window.location.href = "token.html?symbol=" + sym.replace("USDT","").replace("/","").toUpperCase();
+}
+
+// ── Автооновлення кожні 15 секунд ──────────────────────────────────────────
+loadSpread();
+setInterval(loadSpread, 15000);
+// Nav autocomplete — переходить на сторінку токену
+const navInput = document.getElementById("searchInput");
+if (navInput) initAutocomplete(navInput, (sym, base) => {
+  window.location.href = "token.html?symbol=" + base;
+});
+</script>
+</body></html>

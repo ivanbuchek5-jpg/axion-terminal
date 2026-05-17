@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AXION TERMINAL — Funding</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>tailwind.config={darkMode:"class",theme:{extend:{colors:{"sf":"#111319","sf-low":"#191b22","sf-ctr":"#1d1f26","sf-hi":"#282a30","sf-top":"#33343b","sf-min":"#0c0e14","brd":"#3b4a44","tx":"#e2e2ea","tx2":"#bacac2","pri":"#46f1c5","pri-c":"#00d4aa","grn":"#4ae176","red":"#ffb4ab"},fontFamily:{"sans":["Geist"],"mono":["JetBrains Mono","monospace"]}}}}</script>
+<script src="autocomplete.js"></script>
+<style>
+body{background:#111319;color:#e2e2ea;-webkit-font-smoothing:antialiased}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.no-sb::-webkit-scrollbar{display:none}.no-sb{-ms-overflow-style:none;scrollbar-width:none}
+a.nav-active{color:#46f1c5;border-bottom:2px solid #46f1c5}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}.pulse-dot{animation:pulse-dot 2s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin .8s linear infinite}
+.sort-btn{border:1px solid #3b4a44;color:#bacac2;font-family:'JetBrains Mono';font-size:10px;padding:4px 10px;cursor:pointer;transition:all .15s;text-align:left}
+.sort-btn:hover,.sort-btn.active{background:#282a30;color:#46f1c5;border-color:#46f1c5}
+</style>
+</head>
+<body class="bg-sf text-tx flex flex-col font-sans text-sm md:h-screen md:w-screen md:overflow-hidden">
+
+<nav class="hidden md:flex bg-sf border-b border-brd justify-between items-center w-full px-4 h-14 shrink-0">
+  <a href="index.html" class="font-bold text-xl text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
+  <div class="flex items-center h-full gap-1 text-xs">
+    <a href="index.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Home</a>
+    <a href="prices.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Prices</a>
+    <a href="spread.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Spread</a>
+    <a href="funding.html" class="nav-active h-full flex items-center px-4 text-[14px]">Funding</a>
+    <a href="converter.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Converter</a>
+    <a href="chart.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Chart</a>
+  </div>
+  <div class="flex items-center bg-[#12141a] border border-[#2d3139] px-2 h-8">
+    <span class="material-symbols-outlined text-tx2 mr-1" style="font-size:16px">search</span>
+    <input id="searchInput" class="bg-transparent outline-none font-mono text-xs text-tx w-36 p-0" placeholder="Search symbol..." autocomplete="off"/>
+  </div>
+</nav>
+<header class="md:hidden flex items-center justify-between px-4 h-12 shrink-0 bg-sf border-b border-brd">
+  <a href="index.html" class="font-bold text-lg text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
+  <div class="flex items-center gap-1.5 text-[10px]">
+    <span class="material-symbols-outlined text-tx2" style="font-size:18px">schedule</span>
+    <span class="text-pri-c font-mono">FUNDING</span>
+  </div>
+</header>
+
+<main class="flex-1 overflow-y-auto p-4 flex flex-col md:flex-row gap-4 pb-24 md:pb-4 md:overflow-hidden">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="hidden md:flex md:w-[220px] shrink-0 flex-col gap-3 overflow-y-auto no-sb">
+
+    <!-- Summary -->
+    <div class="bg-sf-min border border-brd p-4">
+      <div class="text-[10px] text-tx2 uppercase tracking-widest mb-3 font-mono">Summary</div>
+      <div class="space-y-2 font-mono text-xs">
+        <div class="flex justify-between"><span class="text-tx2">Total pairs</span><span id="statTotal">—</span></div>
+        <div class="flex justify-between"><span class="text-tx2">Avg rate</span><span id="statAvg">—</span></div>
+        <div class="flex justify-between"><span class="text-tx2">Positive</span><span id="statPos" class="text-grn">—</span></div>
+        <div class="flex justify-between"><span class="text-tx2">Negative</span><span id="statNeg" class="text-red">—</span></div>
+        <div class="flex justify-between"><span class="text-tx2">Max rate</span><span id="statMax" class="text-pri-c">—</span></div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-sf-min border border-brd p-4">
+      <div class="text-[10px] text-tx2 uppercase tracking-widest mb-3 font-mono">Filter</div>
+      <div class="space-y-2">
+        <select id="exchangeFilter" onchange="renderTable()" class="w-full bg-sf-ctr border border-brd text-tx font-mono text-xs px-2 py-2 outline-none focus:border-pri-c">
+          <option value="">All exchanges</option>
+          <option value="Binance">Binance</option>
+          <option value="Bybit">Bybit</option>
+          <option value="Gate.io">Gate.io</option>
+          <option value="MEXC">MEXC</option>
+        </select>
+        <select id="dirFilter" onchange="renderTable()" class="w-full bg-sf-ctr border border-brd text-tx font-mono text-xs px-2 py-2 outline-none focus:border-pri-c">
+          <option value="">All directions</option>
+          <option value="pos">Positive only</option>
+          <option value="neg">Negative only</option>
+        </select>
+        <select id="intervalFilter" onchange="renderTable()" class="w-full bg-sf-ctr border border-brd text-tx font-mono text-xs px-2 py-2 outline-none focus:border-pri-c">
+          <option value="">All intervals</option>
+          <option value="1H">1H interval</option>
+          <option value="4H">4H interval</option>
+          <option value="8H">8H interval</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Sort -->
+    <div class="bg-sf-min border border-brd p-4">
+      <div class="text-[10px] text-tx2 uppercase tracking-widest mb-3 font-mono">Sort by rate</div>
+      <div class="flex flex-col gap-1.5">
+        <button id="sortDesc" onclick="setSort('desc')" class="sort-btn active">
+          ↓ Highest first <span class="text-tx2 text-[9px]">(+→−)</span>
+        </button>
+        <button id="sortAsc" onclick="setSort('asc')" class="sort-btn">
+          ↑ Lowest first <span class="text-tx2 text-[9px]">(−→+)</span>
+        </button>
+        <button id="sortAbsDesc" onclick="setSort('abs')" class="sort-btn">
+          ⊕ Extreme first <span class="text-tx2 text-[9px]">(abs)</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MAIN TABLE -->
+  <div class="flex-1 bg-sf-min border border-brd flex flex-col min-w-0">
+    <div class="h-10 border-b border-brd bg-sf-ctr flex items-center justify-between px-4 shrink-0">
+      <span class="font-mono text-[10px] text-tx2 uppercase tracking-widest">Funding Rates Monitor</span>
+      <div class="flex items-center gap-2">
+        <span id="liveDot" class="w-2 h-2 bg-tx2 rounded-full"></span>
+        <span id="liveLabel" class="text-tx2 font-mono text-[10px]">LOADING</span>
+      </div>
+    </div>
+
+    <!-- Desktop header -->
+    <div class="hidden md:grid grid-cols-[180px_1fr_110px_110px_60px_80px] items-center h-8 px-4 border-b border-brd font-mono text-[10px] text-tx2 uppercase tracking-wider shrink-0">
+      <div>Exchange</div><div>Symbol</div>
+      <div class="text-right">Rate</div>
+      <div class="text-right">Annualized</div>
+      <div class="text-right">Interval</div>
+      <div class="text-right">Mark $</div>
+    </div>
+    <!-- Mobile header -->
+    <div class="md:hidden grid grid-cols-[1fr_1fr_90px] items-center h-8 px-4 border-b border-brd font-mono text-[10px] text-tx2 uppercase shrink-0">
+      <div>Symbol</div><div class="text-right">Rate</div><div class="text-right">Annual</div>
+    </div>
+
+    <div id="loadingState" class="flex flex-col items-center justify-center py-16 gap-3">
+      <span class="material-symbols-outlined text-pri spin" style="font-size:32px">refresh</span>
+      <span class="font-mono text-xs text-tx2">Loading funding rates...</span>
+    </div>
+
+    <div id="tableBody" class="no-sb"></div>
+
+    <div class="shrink-0 h-8 border-t border-brd flex items-center justify-between px-4 font-mono text-[10px] text-tx2">
+      <span id="footerText">Binance · Bybit · Gate.io · MEXC perpetuals</span>
+      <span id="lastUpdate">—</span>
+    </div>
+  </div>
+</main>
+
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 bg-sf-ctr border-t border-brd">
+<a href="index.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">home</span><span class="text-[9px] mt-0.5 font-mono">Home</span></a>
+<a href="spread.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">swap_vert</span><span class="text-[9px] mt-0.5 font-mono">Spread</span></a>
+<a href="funding.html" class="flex flex-col items-center justify-center text-pri w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">schedule</span><span class="text-[9px] mt-0.5 font-mono">Funding</span></a>
+<a href="chart.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">monitoring</span><span class="text-[9px] mt-0.5 font-mono">Charts</span></a>
+<a href="converter.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">currency_exchange</span><span class="text-[9px] mt-0.5 font-mono">Converter</span></a>
+</nav>
+
+<script>
+const API = window.location.origin;
+let allData = [];
+let sortMode = "desc";
+
+function fmt(n) {
+  if (!n && n !== 0) return "—";
+  return n.toLocaleString("en-US", {maximumFractionDigits: 2});
+}
+
+function setSort(mode) {
+  sortMode = mode;
+  document.querySelectorAll(".sort-btn").forEach(b => b.classList.remove("active"));
+  const ids = {desc:"sortDesc", asc:"sortAsc", abs:"sortAbsDesc"};
+  document.getElementById(ids[mode]).classList.add("active");
+  renderTable();
+}
+
+function sortData(data) {
+  if (sortMode === "asc")  return [...data].sort((a, b) => a.rate - b.rate);
+  if (sortMode === "desc") return [...data].sort((a, b) => b.rate - a.rate);
+  return [...data].sort((a, b) => Math.abs(b.rate) - Math.abs(a.rate));
+}
+
+async function loadFunding() {
+  try {
+    const res  = await fetch(`${API}/api/funding`);
+    const json = await res.json();
+    allData = json.data || [];
+    document.getElementById("loadingState").classList.add("hidden");
+    renderTable();
+    updateStats();
+    const d = new Date(json.ts);
+    document.getElementById("lastUpdate").textContent = "Updated: " + d.toLocaleTimeString();
+    document.getElementById("liveDot").className   = "w-2 h-2 bg-grn rounded-full pulse-dot";
+    document.getElementById("liveLabel").className = "text-grn font-mono text-[10px]";
+    document.getElementById("liveLabel").textContent = "LIVE";
+  } catch(e) {
+    document.getElementById("loadingState").innerHTML = `
+      <span class="material-symbols-outlined text-red" style="font-size:28px">error</span>
+      <span class="font-mono text-xs text-red">Backend unavailable</span>`;
+    document.getElementById("liveDot").className   = "w-2 h-2 bg-red rounded-full";
+    document.getElementById("liveLabel").textContent = "ERROR";
+  }
+}
+
+function renderTable() {
+  const search       = document.getElementById("searchInput")?.value.toLowerCase() || "";
+  const exFilt       = document.getElementById("exchangeFilter").value;
+  const dirFilt      = document.getElementById("dirFilter").value;
+  const intervalFilt = document.getElementById("intervalFilter").value;
+
+  let filtered = allData
+    .filter(d => !search        || d.symbol.toLowerCase().includes(search))
+    .filter(d => !exFilt        || d.exchange === exFilt)
+    .filter(d => !intervalFilt  || (d.interval || "8H") === intervalFilt)
+    .filter(d => {
+      if (!dirFilt) return true;
+      return dirFilt === "pos" ? d.positive : !d.positive;
+    });
+
+  filtered = sortData(filtered);
+
+  const tbody = document.getElementById("tableBody");
+  if (!filtered.length) {
+    tbody.innerHTML = `<div class="flex items-center justify-center py-12 font-mono text-xs text-tx2">No results</div>`;
+    document.getElementById("footerText").textContent = "0 pairs shown";
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(d => {
+    const rc       = d.positive ? "text-grn" : "text-red";
+    const sign     = d.positive ? "+" : "";
+    const ac       = d.annualized >= 0 ? "text-grn" : "text-red";
+    const sym      = d.symbol.replace("USDT", "/USDT");
+    const interval = d.interval || "8H";
+    const markPrice = d.mark_price > 0 ? fmt(d.mark_price) : "—";
+    const ivColor  = interval === "1H" ? "text-pri border-pri/40" :
+                     interval === "4H" ? "text-pri-c border-pri-c/40" :
+                                         "text-tx2 border-brd";
+    return `
+    <div onclick="goToken('${d.symbol}')" class="border-b border-brd hover:bg-sf-hi transition-colors font-mono text-[12px] cursor-pointer">
+      <div class="hidden md:grid grid-cols-[180px_1fr_110px_110px_60px_80px] items-center h-11 px-4">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full shrink-0" style="background:${d.color}"></span>
+          <span class="text-tx font-medium text-[12px]">${d.exchange}</span>
+        </div>
+        <div class="text-tx2 text-[11px]">${sym}</div>
+        <div class="text-right ${rc} font-semibold">${sign}${d.rate.toFixed(4)}%</div>
+        <div class="text-right ${ac} text-[11px]">${sign}${d.annualized.toFixed(2)}%</div>
+        <div class="text-right"><span class="text-[10px] border px-1.5 py-0.5 ${ivColor}">${interval}</span></div>
+        <div class="text-right text-tx2 text-[11px]">${markPrice}</div>
+      </div>
+      <div class="md:hidden grid grid-cols-[1fr_1fr_90px] items-center h-12 px-4">
+        <div>
+          <div class="text-xs font-semibold">${sym}</div>
+          <div class="flex items-center gap-1 mt-0.5">
+            <span class="w-1.5 h-1.5 rounded-full" style="background:${d.color}"></span>
+            <span class="text-[10px] text-tx2">${d.exchange}</span>
+            <span class="text-[9px] border px-1 ml-1 ${ivColor}">${interval}</span>
+          </div>
+        </div>
+        <div class="text-right ${rc} font-semibold">${sign}${d.rate.toFixed(4)}%</div>
+        <div class="text-right ${ac} text-[11px]">${sign}${d.annualized.toFixed(2)}%</div>
+      </div>
+    </div>`;
+  }).join("");
+
+  document.getElementById("footerText").textContent = `${filtered.length} pairs shown`;
+}
+
+function updateStats() {
+  if (!allData.length) return;
+  const pos = allData.filter(d => d.positive);
+  const neg = allData.filter(d => !d.positive);
+  const avg = allData.reduce((s, d) => s + d.rate, 0) / allData.length;
+  const max = allData.reduce((m, d) => Math.abs(d.rate) > Math.abs(m.rate) ? d : m, allData[0]);
+  document.getElementById("statTotal").textContent = allData.length;
+  document.getElementById("statAvg").textContent   = (avg >= 0 ? "+" : "") + avg.toFixed(4) + "%";
+  document.getElementById("statPos").textContent   = pos.length;
+  document.getElementById("statNeg").textContent   = neg.length;
+  document.getElementById("statMax").textContent   = (max.positive ? "+" : "") + max.rate.toFixed(4) + "%";
+}
+
+function goToken(sym) {
+  window.location.href = "token.html?symbol=" + sym.replace("USDT","").replace("/","");
+}
+
+loadFunding();
+setInterval(loadFunding, 30000);
+
+const navInput = document.getElementById("searchInput");
+if (navInput) {
+  navInput.addEventListener("input", () => renderTable());
+  initAutocomplete(navInput, (sym, base) => {
+    window.location.href = "token.html?symbol=" + base;
+  });
+}
+</script>
+</body></html>

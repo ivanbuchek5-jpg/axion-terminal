@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AXION TERMINAL — Prices</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>tailwind.config={darkMode:"class",theme:{extend:{colors:{"sf":"#111319","sf-low":"#191b22","sf-ctr":"#1d1f26","sf-hi":"#282a30","sf-top":"#33343b","sf-min":"#0c0e14","brd":"#3b4a44","tx":"#e2e2ea","tx2":"#bacac2","pri":"#46f1c5","pri-c":"#00d4aa","grn":"#4ae176","red":"#ffb4ab"},fontFamily:{"sans":["Geist"],"mono":["JetBrains Mono","monospace"]}}}}</script>
+<style>
+body{background:#111319;color:#e2e2ea;-webkit-font-smoothing:antialiased}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.no-sb::-webkit-scrollbar{display:none}.no-sb{-ms-overflow-style:none;scrollbar-width:none}
+a.nav-active{color:#46f1c5;border-bottom:2px solid #46f1c5}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}.pulse-dot{animation:pulse-dot 2s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin .8s linear infinite}
+</style>
+<script src="autocomplete.js"></script>
+</head>
+<body class="bg-sf text-tx h-screen w-screen overflow-hidden flex flex-col font-sans text-sm">
+
+<nav class="hidden md:flex bg-sf border-b border-brd justify-between items-center w-full px-4 h-14 shrink-0">
+  <a href="index.html" class="font-bold text-xl text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
+  <div class="flex items-center h-full gap-1 text-xs">
+    <a href="index.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Home</a>
+    <a href="prices.html" class="nav-active h-full flex items-center px-4 text-[14px]">Prices</a>
+    <a href="spread.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Spread</a>
+    <a href="funding.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Funding</a>
+    <a href="converter.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Converter</a>
+    <a href="chart.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Chart</a>
+  </div>
+  <div class="flex items-center bg-[#12141a] border border-[#2d3139] px-2 h-8">
+    <span class="material-symbols-outlined text-tx2 mr-1" style="font-size:16px">search</span>
+    <input class="bg-transparent outline-none font-mono text-xs text-tx w-36 p-0" placeholder="Search pair..."/>
+  </div>
+</nav>
+<header class="md:hidden flex items-center justify-between px-4 h-12 shrink-0 bg-sf border-b border-brd">
+  <a href="index.html" class="font-bold text-lg text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
+  <div class="flex gap-3"><span class="material-symbols-outlined text-tx2" style="font-size:22px">search</span></div>
+</header>
+
+<main class="flex-1 overflow-y-auto no-sb p-4 flex flex-col gap-4 pb-20 md:pb-4">
+
+  <!-- Token selector + header -->
+  <div class="flex flex-col md:flex-row md:items-end gap-4 md:gap-8">
+    <div>
+      <div class="flex items-center gap-3">
+        <div class="relative">
+          <input id="symbolInput" value="BTC/USDT"
+            class="bg-sf-ctr border border-brd text-tx font-mono text-lg font-bold px-3 py-1 outline-none w-36 focus:border-pri-c"
+            placeholder="BTC/USDT" autocomplete="off"/>
+        </div>
+        <span id="tokenName" class="text-tx2 text-xs">Bitcoin</span>
+      </div>
+      <div class="flex items-baseline gap-3 mt-1">
+        <span id="headerPrice" class="font-mono text-2xl font-bold text-pri">—</span>
+        <span id="headerChange" class="font-mono text-sm text-tx2">—</span>
+      </div>
+    </div>
+    <div class="flex gap-6 font-mono text-xs text-tx2">
+      <div>24h High <span id="high24" class="text-tx ml-1">—</span></div>
+      <div>24h Low  <span id="low24" class="text-tx ml-1">—</span></div>
+      <div>24h Vol  <span id="vol24" class="text-tx ml-1">—</span></div>
+    </div>
+    <div class="ml-auto hidden md:flex items-center gap-2 text-xs">
+      <span id="liveDot" class="w-2 h-2 bg-tx2 rounded-full"></span>
+      <span id="liveLabel" class="text-tx2 font-mono tracking-wider">LOADING</span>
+    </div>
+  </div>
+
+  <!-- Tables row -->
+  <div class="flex flex-col md:flex-row gap-4">
+
+    <!-- Exchange Prices Table -->
+    <div class="flex-1 bg-sf-min border border-brd">
+      <div class="h-8 border-b border-brd bg-sf-ctr flex items-center px-4 font-mono text-[10px] text-tx2 uppercase tracking-widest">
+        Spot Prices by Exchange
+      </div>
+      <!-- Desktop header -->
+      <div class="hidden md:grid grid-cols-[160px_1fr_1fr_1fr_100px] items-center h-8 px-4 border-b border-brd font-mono text-[10px] text-tx2 uppercase tracking-wider">
+        <div>Exchange</div><div class="text-right">Price (USDT)</div><div class="text-right">Bid</div><div class="text-right">Ask</div><div class="text-right">24h %</div>
+      </div>
+      <!-- Mobile header -->
+      <div class="md:hidden grid grid-cols-[1fr_1fr_1fr] items-center h-8 px-4 border-b border-brd font-mono text-[10px] text-tx2 uppercase">
+        <div>Exchange</div><div class="text-right">Price</div><div class="text-right">24h%</div>
+      </div>
+
+      <!-- Loading -->
+      <div id="priceLoading" class="flex items-center justify-center py-10">
+        <span class="material-symbols-outlined text-pri spin" style="font-size:28px">refresh</span>
+      </div>
+      <div id="priceBody"></div>
+    </div>
+
+    <!-- Market Activity sidebar (desktop only) -->
+    <div class="hidden md:flex flex-col w-[280px] bg-sf-min border border-brd shrink-0">
+      <div class="h-8 border-b border-brd bg-sf-ctr flex items-center px-4 font-mono text-[10px] text-tx2 uppercase tracking-widest">Price Deviation</div>
+      <div id="deviationBody" class="flex-1 overflow-hidden"></div>
+    </div>
+  </div>
+</main>
+
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 bg-sf-ctr border-t border-brd">
+<a href="index.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">home</span><span class="text-[9px] mt-0.5 font-mono">Home</span></a>
+<a href="spread.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">swap_vert</span><span class="text-[9px] mt-0.5 font-mono">Spread</span></a>
+<a href="funding.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">schedule</span><span class="text-[9px] mt-0.5 font-mono">Funding</span></a>
+<a href="chart.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">monitoring</span><span class="text-[9px] mt-0.5 font-mono">Charts</span></a>
+<a href="converter.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">currency_exchange</span><span class="text-[9px] mt-0.5 font-mono">Converter</span></a>
+</nav>
+
+<script>
+const API = window.location.origin;
+const NAMES = {BTCUSDT:"Bitcoin",ETHUSDT:"Ethereum",SOLUSDT:"Solana",BNBUSDT:"Binance Coin",XRPUSDT:"Ripple",DOGEUSDT:"Dogecoin",AVAXUSDT:"Avalanche"};
+
+function fmt(n) {
+  if (!n) return "—";
+  if (n < 0.0001) return n.toFixed(8);
+  if (n < 1)   return n.toFixed(4);
+  return n.toLocaleString("en-US", {maximumFractionDigits:2});
+}
+function fmtVol(n) {
+  if (!n) return "—";
+  if (n >= 1e9) return (n/1e9).toFixed(2) + "B";
+  if (n >= 1e6) return (n/1e6).toFixed(2) + "M";
+  return n.toLocaleString();
+}
+
+async function loadPrices() {
+  const raw = document.getElementById("symbolInput").value.toUpperCase().replace("/","").replace("USDT","");
+  const symbol = raw + "USDT";
+  document.getElementById("tokenName").textContent = NAMES[symbol] || raw;
+  document.getElementById("priceLoading").classList.remove("hidden");
+  document.getElementById("priceBody").innerHTML = "";
+
+  const dot   = document.getElementById("liveDot");
+  const label = document.getElementById("liveLabel");
+  dot.className   = "w-2 h-2 bg-tx2 rounded-full";
+  label.textContent = "LOADING";
+
+  try {
+    const res  = await fetch(`${API}/api/prices?symbol=${symbol}`);
+    const json = await res.json();
+    const data = json.data || [];
+
+    document.getElementById("priceLoading").classList.add("hidden");
+
+    // Header stats from first (cheapest isn't always right — use average)
+    if (data.length > 0) {
+      const avg = data.reduce((s,d) => s + d.price, 0) / data.length;
+      const ref = data[0];
+      document.getElementById("headerPrice").textContent = "$" + fmt(ref.price);
+      const chg = ref.change24h;
+      const chEl = document.getElementById("headerChange");
+      chEl.textContent = (chg >= 0 ? "↑ +" : "↓ ") + chg.toFixed(2) + "%";
+      chEl.className   = "font-mono text-sm " + (chg >= 0 ? "text-grn" : "text-red");
+      document.getElementById("high24").textContent = "$" + fmt(ref.high24h);
+      document.getElementById("low24").textContent  = "$" + fmt(ref.low24h);
+      document.getElementById("vol24").textContent  = fmtVol(ref.volume);
+
+      // Render rows
+      const priceBody = document.getElementById("priceBody");
+      data.forEach(e => {
+        const cc = e.change24h >= 0 ? "text-grn" : "text-red";
+        const sign = e.change24h >= 0 ? "+" : "";
+        // Spread between bid and ask
+        const bidAskSpread = e.ask > 0 && e.bid > 0
+          ? ((e.ask - e.bid) / e.bid * 100).toFixed(3) + "%"
+          : "—";
+
+        priceBody.insertAdjacentHTML("beforeend", `
+          <div class="border-b border-brd hover:bg-sf-hi transition-colors font-mono text-[13px]">
+            <div class="hidden md:grid grid-cols-[160px_1fr_1fr_1fr_100px] items-center h-11 px-4">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-sm" style="background:${e.color}"></span>${e.exchange}
+              </div>
+              <div class="text-right text-pri">$${fmt(e.price)}</div>
+              <div class="text-right text-tx2">${e.bid > 0 ? "$" + fmt(e.bid) : "—"}</div>
+              <div class="text-right text-tx2">${e.ask > 0 ? "$" + fmt(e.ask) : "—"}</div>
+              <div class="text-right ${cc}">${sign}${e.change24h.toFixed(2)}%</div>
+            </div>
+            <div class="md:hidden grid grid-cols-[1fr_1fr_1fr] items-center h-11 px-4">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-sm" style="background:${e.color}"></span>${e.exchange}
+              </div>
+              <div class="text-right text-pri">$${fmt(e.price)}</div>
+              <div class="text-right ${cc}">${sign}${e.change24h.toFixed(2)}%</div>
+            </div>
+          </div>`);
+      });
+
+      // Deviation sidebar
+      const maxPrice = Math.max(...data.map(d => d.price));
+      const minPrice = Math.min(...data.map(d => d.price));
+      const devBody = document.getElementById("deviationBody");
+      devBody.innerHTML = `
+        <div class="px-4 py-2 font-mono text-[10px] text-tx2 border-b border-brd/50 flex justify-between">
+          <span>Max deviation:</span>
+          <span class="text-grn">+${((maxPrice-minPrice)/minPrice*100).toFixed(4)}%</span>
+        </div>
+        ${data.map(e => {
+          const dev = ((e.price - minPrice) / minPrice * 100);
+          const barW = maxPrice > minPrice ? ((e.price - minPrice)/(maxPrice-minPrice)*100).toFixed(1) : 0;
+          return `<div class="px-4 py-2 border-b border-brd/30">
+            <div class="flex justify-between font-mono text-[11px] mb-1">
+              <span>${e.exchange}</span>
+              <span class="text-pri">$${fmt(e.price)}</span>
+            </div>
+            <div class="w-full h-1 bg-brd overflow-hidden">
+              <div class="h-full bg-pri-c" style="width:${barW}%"></div>
+            </div>
+          </div>`;
+        }).join("")}`;
+
+      dot.className = "w-2 h-2 bg-grn rounded-full pulse-dot";
+      label.className = "text-grn font-mono tracking-wider";
+      label.textContent = "LIVE DATA";
+    }
+  } catch (e) {
+    console.error(e);
+    document.getElementById("priceLoading").classList.add("hidden");
+    document.getElementById("priceBody").innerHTML =
+      `<div class="py-10 text-center font-mono text-xs text-red">Failed to load — is Flask running?</div>`;
+    dot.className = "w-2 h-2 bg-red rounded-full";
+    label.className = "text-red font-mono";
+    label.textContent = "ERROR";
+  }
+}
+
+loadPrices();
+setInterval(loadPrices, 10000);
+// Autocomplete для вибору символу
+const symInput = document.getElementById("symbolInput");
+if (symInput) initAutocomplete(symInput, (sym, base) => {
+  symInput.value = base + "/USDT";
+  loadPrices();
+});
+</script>
+</body></html>

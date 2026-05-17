@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AXION TERMINAL — Chart</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>tailwind.config={darkMode:"class",theme:{extend:{colors:{"sf":"#111319","sf-low":"#191b22","sf-ctr":"#1d1f26","sf-hi":"#282a30","sf-top":"#33343b","sf-min":"#0c0e14","brd":"#3b4a44","tx":"#e2e2ea","tx2":"#bacac2","pri":"#46f1c5","pri-c":"#00d4aa","grn":"#4ae176","red":"#ffb4ab"},fontFamily:{"sans":["Geist"],"mono":["JetBrains Mono","monospace"]}}}}</script>
+<style>body{background:#111319;color:#e2e2ea;-webkit-font-smoothing:antialiased}.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}a.nav-active{color:#46f1c5;border-bottom:2px solid #46f1c5}.tf-btn{border:1px solid #3b4a44;color:#bacac2;font-family:'JetBrains Mono';font-size:12px;padding:4px 12px;cursor:pointer;transition:all .15s}.tf-btn:hover,.tf-btn.active{background:#282a30;color:#46f1c5;border-color:#46f1c5}</style>
+<script src="autocomplete.js"></script>
+</head>
+<body class="bg-sf text-tx h-screen w-screen overflow-hidden flex flex-col font-sans text-sm">
+
+<nav class="hidden md:flex bg-sf border-b border-brd justify-between items-center w-full px-4 h-14 shrink-0">
+<a href="index.html" class="font-bold text-xl text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
+<div class="flex items-center h-full gap-1 text-xs">
+  <a href="index.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Home</a>
+  <a href="prices.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Prices</a>
+  <a href="spread.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Spread</a>
+  <a href="funding.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Funding</a>
+  <a href="converter.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Converter</a>
+  <a href="chart.html" class="nav-active h-full flex items-center px-4 text-[14px]">Chart</a>
+</div>
+<div class="flex items-center bg-[#12141a] border border-[#2d3139] px-2 h-8"><span class="material-symbols-outlined text-tx2 mr-1" style="font-size:16px">search</span><input class="bg-transparent outline-none font-mono text-xs text-tx w-36 p-0" placeholder="Search pair..."/></div>
+</nav>
+<header class="md:hidden flex items-center justify-between px-4 h-12 shrink-0 bg-sf border-b border-brd">
+<a href="index.html" class="font-bold text-lg text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
+<div><span class="material-symbols-outlined text-tx2" style="font-size:22px">search</span></div>
+</header>
+
+<!-- Chart Controls -->
+<div class="flex items-center gap-2 px-4 py-2 border-b border-brd bg-sf shrink-0 overflow-x-auto">
+  <div class="relative">
+    <input id="chartSymbolInput" value="BTC/USDT" autocomplete="off"
+      class="bg-sf-ctr border border-brd text-tx font-mono text-sm px-2 py-1 outline-none w-32 focus:border-pri-c"
+      placeholder="BTC/USDT"/>
+  </div>
+  <div class="flex gap-1">
+    <button class="tf-btn" onclick="setTF('1')">1m</button>
+    <button class="tf-btn" onclick="setTF('5')">5m</button>
+    <button class="tf-btn" onclick="setTF('15')">15m</button>
+    <button class="tf-btn active" onclick="setTF('60')" id="tf-60">1H</button>
+    <button class="tf-btn" onclick="setTF('240')">4H</button>
+    <button class="tf-btn" onclick="setTF('D')">1D</button>
+    <button class="tf-btn" onclick="setTF('W')">1W</button>
+  </div>
+  <select id="exchangeSelect" onchange="updateChart()" class="bg-sf-ctr border border-brd text-tx2 font-mono text-xs px-2 py-1 outline-none">
+    <option>Binance</option><option>Bybit</option><option>OKX</option>
+  </select>
+  <div class="hidden md:flex items-center gap-1 ml-auto text-xs text-tx2 font-mono">
+    <span class="material-symbols-outlined" style="font-size:14px">info</span>
+    Chart powered by TradingView
+  </div>
+</div>
+
+<!-- TradingView Chart -->
+<main class="flex-1 overflow-hidden pb-16 md:pb-0">
+  <div id="tv-chart" class="w-full h-full"></div>
+</main>
+
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<script>
+let widget;
+let currentTF='60';
+function createChart(){
+  const raw = document.getElementById('chartSymbolInput').value.toUpperCase().replace('/','').replace('USDT','');
+  const sym = 'BINANCE:' + raw + 'USDT';
+  document.getElementById('tv-chart').innerHTML='';
+  widget=new TradingView.widget({
+    autosize:true,
+    symbol:sym,
+    interval:currentTF,
+    timezone:"Etc/UTC",
+    theme:"dark",
+    style:"1",
+    locale:"en",
+    toolbar_bg:"#111319",
+    enable_publishing:false,
+    hide_top_toolbar:true,
+    hide_legend:false,
+    save_image:false,
+    container_id:"tv-chart",
+    backgroundColor:"#111319",
+    gridColor:"#1d1f26",
+    studies:["MASimple@tv-basicstudies"],
+  });
+}
+function updateChart(){createChart()}
+function setTF(tf){
+  currentTF=tf;
+  document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('tf-'+tf);if(btn)btn.classList.add('active');
+  createChart();
+// Autocomplete для вибору символу
+if (typeof initAutocomplete !== 'undefined') {
+  const chartInput = document.getElementById('chartSymbolInput');
+  if (chartInput) initAutocomplete(chartInput, (symbol, base) => {
+    chartInput.value = base + '/USDT';
+    createChart();
+  });
+}
+}
+createChart();
+</script>
+
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 bg-sf-ctr border-t border-brd">
+<a href="index.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">home</span><span class="text-[9px] mt-0.5 font-mono">Home</span></a>
+<a href="spread.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">swap_vert</span><span class="text-[9px] mt-0.5 font-mono">Spread</span></a>
+<a href="funding.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">schedule</span><span class="text-[9px] mt-0.5 font-mono">Funding</span></a>
+<a href="chart.html" class="flex flex-col items-center justify-center text-pri w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">monitoring</span><span class="text-[9px] mt-0.5 font-mono">Charts</span></a>
+<a href="converter.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">currency_exchange</span><span class="text-[9px] mt-0.5 font-mono">Converter</span></a>
+</nav>
+</body></html>

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AXION TERMINAL — Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config={darkMode:"class",theme:{extend:{colors:{"sf":"#111319","sf-low":"#191b22","sf-ctr":"#1d1f26","sf-hi":"#282a30","sf-top":"#33343b","sf-min":"#0c0e14","brd":"#3b4a44","tx":"#e2e2ea","tx2":"#bacac2","pri":"#46f1c5","pri-c":"#00d4aa","grn":"#4ae176","red":"#ffb4ab","err":"#93000a"},fontFamily:{"sans":["Geist"],"mono":["JetBrains Mono","monospace"]}}}}
+</script>
+<style>
+body{background:#111319;color:#e2e2ea;-webkit-font-smoothing:antialiased}
+.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.no-sb::-webkit-scrollbar{display:none}.no-sb{-ms-overflow-style:none;scrollbar-width:none}
+@keyframes tk{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tk-move{display:flex;width:max-content;animation:tk 35s linear infinite}
+.tk-move:hover{animation-play-state:paused}
+a.nav-active{color:#46f1c5;border-bottom:2px solid #46f1c5}
+</style>
+<script src="autocomplete.js"></script>
+</head>
+<body class="bg-sf text-tx h-screen w-screen overflow-hidden flex flex-col font-sans text-sm">
+
+<!-- DESKTOP NAV -->
+<nav class="hidden md:flex bg-sf border-b border-brd justify-between items-center w-full px-4 h-14 shrink-0">
+<a href="index.html" class="font-bold text-xl text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
+<div class="flex items-center h-full gap-1 text-xs">
+  <a href="index.html" class="nav-active h-full flex items-center px-4 text-[14px]">Home</a>
+  <a href="prices.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Prices</a>
+  <a href="spread.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Spread</a>
+  <a href="funding.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Funding</a>
+  <a href="converter.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Converter</a>
+  <a href="chart.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Chart</a>
+</div>
+<div class="flex items-center bg-[#12141a] border border-[#2d3139] px-2 h-8">
+  <span class="material-symbols-outlined text-tx2 mr-1" style="font-size:16px">search</span>
+  <input id="navSearchInput" class="bg-transparent outline-none font-mono text-xs text-tx w-36 p-0" placeholder="Search pair..." onkeydown="handleSearch(event,this)"/>
+</div>
+</nav>
+
+<!-- MOBILE HEADER -->
+<header class="md:hidden flex items-center justify-between px-4 h-12 shrink-0 bg-sf border-b border-brd">
+<a href="index.html" class="font-bold text-lg text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
+<div class="flex gap-3">
+  <span class="material-symbols-outlined text-tx2" style="font-size:22px" onclick="toggleMobileSearch()">search</span>
+</div>
+</header>
+
+<!-- MOBILE SEARCH BAR -->
+<div id="mobileSearchBar" class="md:hidden hidden bg-sf-ctr border-b border-brd px-3 py-2">
+  <div class="flex items-center bg-sf-hi border border-brd px-2 h-9">
+    <span class="material-symbols-outlined text-tx2 mr-2" style="font-size:16px">search</span>
+    <input id="mobileSearchInput" class="bg-transparent outline-none font-mono text-sm text-tx flex-1 p-0" placeholder="Search token — BTC, ETH, SOL..." autocomplete="off"/>
+  </div>
+</div>
+<!-- TICKER -->
+<div class="bg-sf-ctr border-b border-brd h-7 flex items-center shrink-0" style="overflow:hidden">
+  <div id="tickerWrap" style="display:flex;white-space:nowrap;will-change:transform">
+    <div id="tickerTrack" class="font-mono text-[11px]" style="display:inline-flex;align-items:center">
+      <span style="color:#bacac2;padding:0 20px">Loading market data...</span>
+    </div>
+    <div id="tickerClone" class="font-mono text-[11px]" style="display:inline-flex;align-items:center"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="flex-1 overflow-y-auto no-sb p-4 flex flex-col gap-4 pb-20 md:pb-4">
+
+<!-- HERO -->
+<div class="hidden md:flex bg-sf-low border border-brd flex-col items-center justify-center py-12 gap-5">
+<h1 class="font-semibold text-2xl text-tx tracking-tight">Multi-Exchange Crypto Terminal</h1>
+<p class="text-sm text-tx2">Real-time prices, spreads and funding rates across all major exchanges</p>
+<div class="relative w-[460px]">
+  <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-tx2">search</span>
+  <input id="heroSearch" class="w-full bg-[#12141a] border border-[#2d3139] font-mono text-sm text-tx pl-10 pr-4 py-3 focus:border-pri-c outline-none" placeholder="Search any token — BTC, ETH, SOL..." onkeydown="handleSearch(event,this)"/>
+</div>
+</div>
+
+<!-- TABLE -->
+<div class="flex flex-col bg-sf-min border border-brd">
+<div class="hidden md:grid grid-cols-[36px_140px_1fr_1fr_1fr_1fr] items-center h-8 px-4 border-b border-brd bg-sf-ctr font-mono text-[10px] text-tx2 uppercase tracking-widest">
+  <div>#</div><div>Symbol</div><div class="text-right">Price</div><div class="text-right">24h %</div>
+  <div class="text-right text-pri-c">Funding</div><div class="text-right">Volume 24h</div>
+</div>
+<div class="md:hidden grid grid-cols-[1fr_1fr_80px] items-center h-8 px-4 border-b border-brd bg-sf-ctr font-mono text-[10px] text-tx2 uppercase">
+  <div>Token</div><div class="text-right">Price</div><div class="text-right">24h</div>
+</div>
+<div id="desktopTokenRows"></div>
+<div id="mobileTokenRows"></div>
+</div>
+
+<!-- CARDS -->
+<div class="hidden md:grid grid-cols-2 gap-4">
+<div class="flex flex-col border border-brd bg-sf-min">
+  <div class="h-8 border-b border-brd bg-sf-ctr flex items-center px-4 font-mono text-[10px] text-tx2 uppercase tracking-widest">⇅ Best Spread Opportunities</div>
+  <div onclick="goToken('STORJ')" class="flex justify-between px-4 h-10 border-b border-brd/50 items-center font-mono text-xs hover:bg-sf-hi cursor-pointer"><div>STORJ <span class="bg-sf-top text-tx2 px-1 text-[9px] ml-1">ASTER↔WHITEBIT</span></div><span class="text-grn">+2.21%</span></div>
+  <div onclick="goToken('ALGO')" class="flex justify-between px-4 h-10 border-b border-brd/50 items-center font-mono text-xs hover:bg-sf-hi cursor-pointer"><div>ALGO <span class="bg-sf-top text-tx2 px-1 text-[9px] ml-1">BINANCE↔BYBIT</span></div><span class="text-grn">+1.87%</span></div>
+  <div onclick="goToken('MANA')" class="flex justify-between px-4 h-10 border-b border-brd/50 items-center font-mono text-xs hover:bg-sf-hi cursor-pointer"><div>MANA <span class="bg-sf-top text-tx2 px-1 text-[9px] ml-1">GATE↔MEXC</span></div><span class="text-grn">+1.54%</span></div>
+  <div onclick="goToken('AVAX')" class="flex justify-between px-4 h-10 border-b border-brd/50 items-center font-mono text-xs hover:bg-sf-hi cursor-pointer"><div>AVAX <span class="bg-sf-top text-tx2 px-1 text-[9px] ml-1">KUCOIN↔BYBIT</span></div><span class="text-grn">+0.94%</span></div>
+  <div onclick="goToken('XRP')" class="flex justify-between px-4 h-10 items-center font-mono text-xs hover:bg-sf-hi cursor-pointer"><div>XRP <span class="bg-sf-top text-tx2 px-1 text-[9px] ml-1">BINANCE↔KRAKEN</span></div><span class="text-grn">+0.69%</span></div>
+</div>
+<div class="flex flex-col border border-brd bg-sf-min">
+  <div class="h-8 border-b border-brd bg-sf-ctr flex items-center px-4 font-mono text-[10px] text-tx2 uppercase tracking-widest">⟳ Extreme Funding Rates</div>
+  <div class="flex-1 grid grid-cols-2">
+    <div class="border-r border-brd/50">
+      <div class="px-4 py-2 text-[9px] text-tx2 border-b border-brd/50 uppercase tracking-widest">Highest Positive</div>
+      <div onclick="goToken('PEPE')" class="flex justify-between px-4 h-10 border-b border-brd/50 items-center font-mono text-xs hover:bg-sf-hi cursor-pointer"><span>PEPE</span><span class="text-pri-c">+0.154%</span></div>
+      <div onclick="goToken('WIF')" class="flex justify-between px-4 h-10 border-b border-brd/50 items-center font-mono text-xs hover:bg-sf-hi cursor-pointer"><span>WIF</span><span class="text-pri-c">+0.120%</span></div>
+      <div onclick="goToken('FLOKI')" class="flex justify-between px-4 h-10 items-center font-mono text-xs hover:bg-sf-hi cursor-pointer"><span>FLOKI</span><span class="text-pri-c">+0.098%</span></div>
+    </div>
+    <div>
+      <div class="px-4 py-2 text-[9px] text-tx2 border-b border-brd/50 uppercase tracking-widest">Lowest Negative</div>
+      <div onclick="goToken('LUNC')" class="flex justify-between px-4 h-10 border-b border-brd/50 items-center font-mono text-xs hover:bg-sf-hi cursor-pointer"><span>LUNC</span><span class="text-red">-0.085%</span></div>
+      <div onclick="goToken('TRB')" class="flex justify-between px-4 h-10 border-b border-brd/50 items-center font-mono text-xs hover:bg-sf-hi cursor-pointer"><span>TRB</span><span class="text-red">-0.062%</span></div>
+      <div onclick="goToken('BOND')" class="flex justify-between px-4 h-10 items-center font-mono text-xs hover:bg-sf-hi cursor-pointer"><span>BOND</span><span class="text-red">-0.055%</span></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- FOOTER -->
+<!-- MOBILE CARDS: Spread + Funding -->
+<div class="md:hidden flex flex-col gap-4 mt-2 pb-4">
+
+  <!-- Best Spreads mobile -->
+  <div class="flex flex-col border border-brd bg-sf-min mx-0">
+    <div class="h-8 border-b border-brd bg-sf-ctr flex items-center px-4 font-mono text-[10px] text-tx2 uppercase tracking-widest">
+      ⇅ Best Spread Opportunities
+    </div>
+    <div id="mobileSpreadCards">
+      <div class="flex items-center justify-center py-6 font-mono text-xs text-tx2">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Extreme Funding mobile -->
+  <div class="flex flex-col border border-brd bg-sf-min mx-0">
+    <div class="h-8 border-b border-brd bg-sf-ctr flex items-center px-4 font-mono text-[10px] text-tx2 uppercase tracking-widest">
+      ⟳ Extreme Funding Rates
+    </div>
+    <div id="mobileFundingCards">
+      <div class="flex items-center justify-center py-6 font-mono text-xs text-tx2">Loading...</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="hidden md:flex justify-center py-3 text-[10px] text-tx2 font-mono tracking-wider">
+  DATA FROM BINANCE · BYBIT · MEXC · GATE · BINGX — AUTO-REFRESH 15s — © 2025 AXION TERMINAL
+</div>
+</main>
+
+<!-- MOBILE NAV -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 bg-sf-ctr border-t border-brd">
+<a href="index.html" class="flex flex-col items-center justify-center text-pri w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">home</span><span class="text-[9px] mt-0.5 font-mono">Home</span></a>
+<a href="spread.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">swap_vert</span><span class="text-[9px] mt-0.5 font-mono">Spread</span></a>
+<a href="funding.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">schedule</span><span class="text-[9px] mt-0.5 font-mono">Funding</span></a>
+<a href="chart.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">monitoring</span><span class="text-[9px] mt-0.5 font-mono">Charts</span></a>
+<a href="converter.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">currency_exchange</span><span class="text-[9px] mt-0.5 font-mono">Converter</span></a>
+</nav>
+
+<script>
+// ── Пошук токену ─────────────────────────────────────────────────────────────
+function goToken(sym) {
+  window.location.href = "token.html?symbol=" + sym.replace("USDT","").replace("/","").toUpperCase();
+}
+
+/* ── Nav Autocomplete ── */
+var navInput = document.getElementById("navSearchInput");
+if (navInput) initAutocomplete(navInput, function(sym, base) { goToken(base); });
+
+var heroInput = document.getElementById("heroSearch");
+if (heroInput) initAutocomplete(heroInput, function(sym, base) { goToken(base); });
+
+/* ── Mobile Search ── */
+function toggleMobileSearch() {
+  var bar = document.getElementById("mobileSearchBar");
+  var inp = document.getElementById("mobileSearchInput");
+  bar.classList.toggle("hidden");
+  if (!bar.classList.contains("hidden")) {
+    inp.focus();
+    initAutocomplete(inp, function(sym, base) { goToken(base); });
+  }
+}
+
+/* ── Live Ticker (requestAnimationFrame) ── */
+var tickerPos = 0;
+var tickerRAF = null;
+
+function tickerAnimate() {
+  var wrap  = document.getElementById("tickerWrap");
+  var track = document.getElementById("tickerTrack");
+  if (!wrap || !track) return;
+  var w = track.offsetWidth;
+  if (w === 0) { tickerRAF = requestAnimationFrame(tickerAnimate); return; }
+  tickerPos -= 0.6;
+  if (Math.abs(tickerPos) >= w) tickerPos = 0;
+  wrap.style.transform = "translateX(" + tickerPos + "px)";
+  tickerRAF = requestAnimationFrame(tickerAnimate);
+}
+
+function buildTicker(data) {
+  var track = document.getElementById("tickerTrack");
+  var clone = document.getElementById("tickerClone");
+  if (!track) return;
+
+  var sep   = '<span style="color:#3b4a44;padding:0 10px">|</span>';
+  var parts = [];
+
+  var tokens  = data.tokens  || [];
+  var spreads = data.spreads || [];
+  var funding = data.funding || [];
+  var i, t, s, f, color, arrow, sign, price, fc, fs;
+
+  for (i = 0; i < tokens.length; i++) {
+    t     = tokens[i];
+    color = t.up ? "#4ae176" : "#ffb4ab";
+    arrow = t.up ? "&#8593;" : "&#8595;";
+    sign  = t.up ? "+" : "";
+    price = t.price < 1    ? t.price.toFixed(4)
+          : t.price < 1000 ? t.price.toFixed(2)
+          : t.price.toLocaleString("en-US", {maximumFractionDigits:2});
+    parts.push(
+      '<span style="padding:0 12px;cursor:pointer" onclick="goToken("' + t.symbol + '")">' +
+      '<span style="color:#bacac2">' + t.label + '</span> ' +
+      '<span style="color:#e2e2ea">$' + price + '</span> ' +
+      '<span style="color:' + color + '">' + arrow + ' ' + sign + t.change_8h + '%</span>' +
+      '</span>'
+    );
+  }
+
+  for (i = 0; i < spreads.length; i++) {
+    s = spreads[i];
+    parts.push(
+      '<span style="padding:0 12px;cursor:pointer" onclick="goToken("' + s.symbol + '")">' +
+      '<span style="color:#46f1c5;font-weight:700">S</span> ' +
+      '<span style="color:#bacac2">' + s.symbol + '</span> ' +
+      '<span style="color:#4ae176">+' + s.spread.toFixed(3) + '%</span>' +
+      '</span>'
+    );
+  }
+
+  for (i = 0; i < funding.length; i++) {
+    f  = funding[i];
+    fc = f.positive ? "#4ae176" : "#ffb4ab";
+    fs = f.positive ? "+" : "";
+    parts.push(
+      '<span style="padding:0 12px;cursor:pointer" onclick="goToken("' + f.symbol + '")">' +
+      '<span style="color:#46f1c5;font-weight:700">F</span> ' +
+      '<span style="color:#bacac2">' + f.symbol + '</span> ' +
+      '<span style="color:' + fc + '">' + fs + f.rate.toFixed(4) + '%</span>' +
+      '</span>'
+    );
+  }
+
+  if (!parts.length) return;
+
+  var html = parts.join(sep);
+  track.innerHTML = html;
+  if (clone) clone.innerHTML = sep + html;
+
+  tickerPos = 0;
+  if (tickerRAF) cancelAnimationFrame(tickerRAF);
+  tickerRAF = requestAnimationFrame(tickerAnimate);
+}
+
+async function loadTicker() {
+  try {
+    var r = await fetch(window.location.origin + "/api/ticker");
+    var j = await r.json();
+    buildTicker(j);
+  } catch(e) { console.warn("Ticker:", e.message); }
+}
+loadTicker();
+setInterval(loadTicker, 15000);
+
+/* ── Live token table (desktop + mobile) ── */
+function fmtVol(n) {
+  if (!n) return "-";
+  if (n >= 1e12) return "$" + (n/1e12).toFixed(2) + "T";
+  if (n >= 1e9)  return "$" + (n/1e9).toFixed(2)  + "B";
+  if (n >= 1e6)  return "$" + (n/1e6).toFixed(2)  + "M";
+  return "$" + n.toFixed(0);
+}
+function fmtPrice(p) {
+  if (!p) return "-";
+  if (p < 0.000001) return "$" + p.toFixed(8);
+  if (p < 0.0001)   return "$" + p.toFixed(6);
+  if (p < 0.01)     return "$" + p.toFixed(5);
+  if (p < 1)        return "$" + p.toFixed(4);
+  if (p < 1000)     return "$" + p.toFixed(2);
+  return "$" + p.toLocaleString("en-US", {maximumFractionDigits:2});
+}
+
+async function loadTokenTable() {
+  try {
+    var r = await fetch(window.location.origin + "/api/market");
+    var j = await r.json();
+    var tokens = j.tokens || [];
+
+    var deskCont   = document.getElementById("desktopTokenRows");
+    var mobileCont = document.getElementById("mobileTokenRows");
+
+    var deskHtml   = "";
+    var mobileHtml = "";
+
+    for (var i = 0; i < tokens.length; i++) {
+      var t      = tokens[i];
+      var cc     = t.up ? "color:#4ae176" : "color:#ffb4ab";
+      var sign   = t.up ? "+" : "";
+      var price  = fmtPrice(t.price);
+      var vol    = fmtVol(t.volume);
+      var fund   = t.funding ? (t.funding >= 0 ? "+" : "") + t.funding.toFixed(4) + "%" : "-";
+      var fcolor = t.funding >= 0 ? "color:#00d4aa" : "color:#ffb4ab";
+
+      /* Desktop row - 7 columns: # Symbol Price 24h% Funding Volume MarketCap */
+      deskHtml +=
+        '<div onclick="goToken(\x22' + t.full + '\x22)" ' +
+        'class="hidden md:grid grid-cols-[36px_140px_1fr_1fr_1fr_1fr] items-center h-10 px-4 border-b border-brd font-mono text-[13px] hover:bg-sf-hi transition-colors cursor-pointer">' +
+        '<div style="color:#bacac2">' + (i+1) + '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span style="font-weight:600">' + t.symbol + '</span>' +
+          '<span style="color:#bacac2;font-size:10px">' + t.name + '</span>' +
+        '</div>' +
+        '<div style="text-align:right">' + price + '</div>' +
+        '<div style="text-align:right;' + cc + '">' + sign + t.change24h + '%</div>' +
+        '<div style="text-align:right;' + fcolor + '">' + fund + '</div>' +
+        '<div style="text-align:right">' + vol + '</div>' +
+        
+        '</div>';
+
+      /* Mobile row - 3 columns: Token Price 24h% */
+      mobileHtml +=
+        '<div onclick="goToken(\x22' + t.full + '\x22)" ' +
+        'class="md:hidden grid grid-cols-[1fr_1fr_80px] items-center h-11 px-4 border-b border-brd font-mono text-[13px] cursor-pointer hover:bg-sf-hi">' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span style="font-weight:600">' + t.symbol + '</span>' +
+          '<span style="color:#bacac2;font-size:10px">' + t.name + '</span>' +
+        '</div>' +
+        '<div style="text-align:right">' + price + '</div>' +
+        '<div style="text-align:right;' + cc + '">' + sign + t.change24h + '%</div>' +
+        '</div>';
+    }
+
+    if (deskCont)   deskCont.innerHTML   = deskHtml;
+    if (mobileCont) mobileCont.innerHTML = mobileHtml;
+
+  } catch(e) { console.warn("Token table:", e); }
+}
+loadTokenTable();
+setInterval(loadTokenTable, 15000);
+
+/* ── Mobile Spread + Funding cards ── */
+async function loadMobileCards() {
+  /* Spreads */
+  try {
+    var r = await fetch(window.location.origin + "/api/spread");
+    var j = await r.json();
+    var spreads = (j.data || []).slice(0, 5);
+    var sCont = document.getElementById("mobileSpreadCards");
+    if (sCont) {
+      var html = "", i, s, sym;
+      for (i = 0; i < spreads.length; i++) {
+        s   = spreads[i];
+        sym = s.symbol.replace("USDT","");
+        html += '<div onclick="goToken("' + s.symbol + '")" style="display:flex;justify-content:space-between;padding:0 16px;height:44px;align-items:center;font-family:JetBrains Mono,monospace;font-size:12px;border-bottom:1px solid rgba(59,74,68,.5);cursor:pointer">' +
+                '<div style="display:flex;align-items:center;gap:8px"><span style="font-weight:600">' + sym + '</span><span style="color:#bacac2;font-size:10px">' + s.exchange_a + '↔' + s.exchange_b + '</span></div>' +
+                '<span style="color:#4ae176;font-weight:600">+' + s.spread_pct.toFixed(3) + '%</span>' +
+                '</div>';
+      }
+      sCont.innerHTML = html || '<div style="padding:16px;font-size:12px;color:#bacac2;font-family:monospace">No data</div>';
+    }
+  } catch(e) { console.warn("Spread cards:", e); }
+
+  /* Funding */
+  try {
+    var r2 = await fetch(window.location.origin + "/api/funding");
+    var j2 = await r2.json();
+    var all  = j2.data || [];
+    var pos  = all.filter(function(d) { return d.positive; }).slice(0,3);
+    var neg  = all.filter(function(d) { return !d.positive; }).slice(0,3);
+    var fCont = document.getElementById("mobileFundingCards");
+    if (fCont) {
+      var pH = "", nH = "", i, d;
+      for (i = 0; i < pos.length; i++) {
+        d = pos[i];
+        pH += '<div onclick="goToken("' + d.symbol + '")" style="display:flex;justify-content:space-between;padding:0 16px;height:40px;align-items:center;font-family:JetBrains Mono,monospace;font-size:12px;border-bottom:1px solid rgba(59,74,68,.5);cursor:pointer">' +
+              '<span>' + d.symbol.replace("USDT","") + '</span>' +
+              '<span style="color:#4ae176">+' + d.rate.toFixed(4) + '%</span></div>';
+      }
+      for (i = 0; i < neg.length; i++) {
+        d = neg[i];
+        nH += '<div onclick="goToken("' + d.symbol + '")" style="display:flex;justify-content:space-between;padding:0 16px;height:40px;align-items:center;font-family:JetBrains Mono,monospace;font-size:12px;border-bottom:1px solid rgba(59,74,68,.5);cursor:pointer">' +
+              '<span>' + d.symbol.replace("USDT","") + '</span>' +
+              '<span style="color:#ffb4ab">' + d.rate.toFixed(4) + '%</span></div>';
+      }
+      fCont.innerHTML =
+        '<div style="display:grid;grid-template-columns:1fr 1fr">' +
+        '<div style="border-right:1px solid rgba(59,74,68,.5)">' +
+        '<div style="padding:6px 16px;font-size:9px;color:#bacac2;font-family:monospace;text-transform:uppercase;border-bottom:1px solid rgba(59,74,68,.5)">Highest Positive</div>' +
+        pH + '</div>' +
+        '<div><div style="padding:6px 16px;font-size:9px;color:#bacac2;font-family:monospace;text-transform:uppercase;border-bottom:1px solid rgba(59,74,68,.5)">Lowest Negative</div>' +
+        nH + '</div></div>';
+    }
+  } catch(e) { console.warn("Funding cards:", e); }
+}
+loadMobileCards();
+setInterval(loadMobileCards, 30000);
+
+</script>
+</body></html>
