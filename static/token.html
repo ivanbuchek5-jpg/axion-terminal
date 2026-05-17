@@ -78,10 +78,10 @@ a.nav-active{color:#46f1c5;border-bottom:2px solid #46f1c5}
 </div>
 
 <!-- MAIN LAYOUT -->
-<div class="flex flex-col md:flex-row flex-1 overflow-y-auto md:overflow-hidden">
+<div class="flex flex-col md:flex-row flex-1 overflow-hidden">
 
   <!-- LEFT: Chart -->
-  <div class="flex flex-col border-r border-brd" style="min-height:55vh">
+  <div class="flex flex-col flex-1 min-w-0 border-r border-brd">
 
     <!-- TF controls -->
     <div class="flex items-center gap-1.5 px-3 py-2 border-b border-brd bg-sf shrink-0">
@@ -96,11 +96,11 @@ a.nav-active{color:#46f1c5;border-bottom:2px solid #46f1c5}
     </div>
 
     <!-- TradingView widget -->
-    <div id="tv-chart" style="height:clamp(280px,45vh,600px);width:100%"></div>
+    <div id="tv-chart" class="flex-1" style="min-height:300px"></div>
   </div>
 
   <!-- RIGHT: Funding + Spreads -->
-  <div class="md:w-[360px] shrink-0 flex flex-col overflow-y-auto no-sb bg-sf max-h-[50vh] md:max-h-none">
+  <div class="md:w-[360px] shrink-0 flex flex-col overflow-y-auto no-sb bg-sf">
 
     <!-- FUNDING SECTION -->
     <div class="border-b border-brd">

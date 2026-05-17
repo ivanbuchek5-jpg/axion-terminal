@@ -403,34 +403,40 @@ def api_market():
     }
     raw = fetch_all_parallel(tasks)
 
-    all_tickers = raw.get("all_tickers") or []
-    funding_map = {}
-    for f in (raw.get("funding_rates") or []):
-        funding_map[f.get("symbol", "")] = float(f.get("lastFundingRate", 0) or 0) * 100
+    # MEXC spot — основне джерело
+    mexc_items = parse_mexc_spot(raw.get("mexc_spot"))
+    mexc_map   = {d["symbol"]: d for d in mexc_items}
 
-    ticker_map = {d.get("symbol"): d for d in all_tickers}
+    # Gate.io — запасне
+    gate_items = parse_gate_spot(raw.get("gate_spot"))
+    gate_map   = {d["symbol"]: d for d in gate_items}
+
+    # Funding з MEXC futures
+    funding_map = {}
+    mexc_fund_raw = (raw.get("mexc_fund") or {}).get("data", [])
+    for d in (mexc_fund_raw if isinstance(mexc_fund_raw, list) else []):
+        sym  = d.get("symbol", "").replace("_", "")
+        rate = float(d.get("fundingRate", 0) or 0) * 100
+        if rate != 0:
+            funding_map[sym] = round(rate, 4)
 
     tokens = []
     for sym in TOP_SYMBOLS:
-        d = ticker_map.get(sym)
-        if not d:
+        d = mexc_map.get(sym) or gate_map.get(sym)
+        if not d or d["price"] == 0:
             continue
-        price  = float(d.get("lastPrice", 0))
-        change = float(str(d.get("priceChangePercent", 0) or 0).replace("%", ""))
-        vol    = float(d.get("quoteVolume", 0))
         tokens.append({
             "symbol":    sym.replace("USDT", ""),
             "full":      sym,
             "name":      NAMES.get(sym, sym),
-            "price":     price,
-            "change24h": round(change, 2),
-            "volume":    vol,
-            "funding":   round(funding_map.get(sym, 0), 4),
-            "up":        change >= 0,
+            "price":     d["price"],
+            "change24h": round(d["change24h"], 2),
+            "volume":    d["volume"],
+            "funding":   funding_map.get(sym, 0),
+            "up":        d["change24h"] >= 0,
         })
 
-    # Глобальна статистика (проста агрегація)
-    total_vol = sum(float(d.get("quoteVolume", 0)) for d in all_tickers)
+    total_vol = sum(d["volume"] for d in mexc_items)
 
     return jsonify({
         "tokens":    tokens,
