@@ -19,7 +19,34 @@
     sset("axion-theme", t);
     var m = document.querySelector('meta[name="theme-color"]');
     if (m) m.setAttribute("content", t === "light" ? "#f5f8ec" : "#0f110d");
+    var b = document.getElementById("themeBtn");
+    if (b) { b.setAttribute("aria-label", t === "light" ? "Switch to dark mode" : "Switch to light mode"); b.setAttribute("aria-pressed", t === "dark" ? "true" : "false"); }
     window.dispatchEvent(new CustomEvent("axion:theme", { detail: t }));
+  };
+  /* "Eclipse": the new theme grows from the toggle as a soft-edged circle (View Transitions API) */
+  var vtBusy = false;
+  AX.toggleTheme = function () {
+    var root = document.documentElement, btn = document.getElementById("themeBtn");
+    var next = AX.theme() === "light" ? "dark" : "light";
+    var apply = function () { AX.setTheme(next); };
+    if (vtBusy) return;
+    if (!document.startViewTransition || reduce || !btn) { apply(); return; }
+    var r = btn.getBoundingClientRect(), W = innerWidth, H = innerHeight, x = r.left + r.width / 2, y = r.top + r.height / 2;
+    var R = Math.hypot(Math.max(x, W - x), Math.max(y, H - y));
+    root.style.setProperty("--vt-x", x + "px"); root.style.setProperty("--vt-y", y + "px");
+    root.classList.add("vt-eclipse");
+    vtBusy = true;
+    var vt = document.startViewTransition(apply);
+    vt.ready.then(function () {
+      var kf = [];
+      for (var i = 0; i <= 48; i++) {
+        var t = i / 48, e = t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        kf.push({ "--l1": (e * (R + 64)) + "px", offset: t });
+      }
+      root.animate(kf, { duration: 1150, easing: "linear", fill: "both", pseudoElement: "::view-transition-new(root)" });
+    });
+    var done = function () { root.classList.remove("vt-eclipse"); vtBusy = false; };
+    vt.finished.then(done, done);
   };
 
   /* ── icons ── */
@@ -259,24 +286,67 @@
   AX.init = function (page, opts) {
     opts = opts || {};
     var shell = document.querySelector(".shell");
+    var NI = 0;
+    NAV.forEach(function (n, i) { if (n[0] === page) NI = i; });
     var top = document.createElement("div");
     top.innerHTML =
-      '<header class="top rise">' +
+      '<header class="nav" id="nav"><div class="nav-in">' +
       '<a class="brand" href="index.html" aria-label="AXION TERMINAL"><span class="logo"><img src="logo.png" alt=""></span>' +
       '<span class="brand-t"><b>AXION</b><i>TERMINAL</i></span></a>' +
-      '<button class="icon-btn" id="themeBtn" aria-label="Toggle theme"></button>' +
-      '<label class="search">' + AX.icon("search") + '<input id="navSearch" placeholder="Search token — BTC, ETH, SOL…" autocomplete="off" spellcheck="false"></label>' +
-      "</header>" +
-      (opts.ticker === false ? "" : '<div class="ticker rise" style="--d:1"><div class="tk-track" id="tkTrack"><div class="tk-load">Loading market data…</div></div></div>');
-    shell.insertBefore(top, shell.firstChild);
-    while (top.firstChild) shell.insertBefore(top.firstChild, top);
-    top.remove();
+      '<nav class="nav-links" id="navLinks" aria-label="Main"><span class="nav-hv" id="navHv"></span><span class="nav-hl" id="navHl"></span>' +
+      NAV.map(function (n) { return '<a href="' + n[1] + '"' + (n[0] === page ? ' aria-current="page"' : "") + ">" + n[2] + "</a>"; }).join("") + "</nav>" +
+      '<div class="nav-r"><button type="button" class="theme-toggle" id="themeBtn" aria-pressed="true">' + AX.icon("moon", "icon-moon") + AX.icon("sun", "icon-sun") + "</button></div>" +
+      "</div></header>" +
+      '<div class="top-search rise" style="--d:1"><label class="search">' + AX.icon("search") + '<input id="navSearch" placeholder="Search token — BTC, ETH, SOL…" autocomplete="off" spellcheck="false"></label></div>' +
+      (opts.ticker === false ? "" : '<div class="ticker rise" style="--d:2"><div class="tk-track" id="tkTrack"><div class="tk-load">Loading market data…</div></div></div>');
+    while (top.lastChild) shell.insertBefore(top.lastChild, shell.firstChild);
 
-    /* theme button */
+    /* theme toggle */
     var tb = document.getElementById("themeBtn");
-    function paintTheme() { tb.innerHTML = AX.icon(AX.theme() === "light" ? "moon" : "sun"); }
-    paintTheme();
-    tb.addEventListener("click", function () { AX.setTheme(AX.theme() === "light" ? "dark" : "light"); paintTheme(); });
+    tb.setAttribute("aria-label", AX.theme() === "light" ? "Switch to dark mode" : "Switch to light mode");
+    tb.setAttribute("aria-pressed", AX.theme() === "dark" ? "true" : "false");
+    tb.addEventListener("click", AX.toggleTheme);
+
+    /* navbar: morph on scroll + pointer light + sliding highlights */
+    var nav = document.getElementById("nav"), ticking = false;
+    function onScroll() {
+      if (ticking) return; ticking = true;
+      requestAnimationFrame(function () {
+        var y = window.scrollY || 0, c = nav.classList.contains("compact");
+        if (!c && y > 56) nav.classList.add("compact"); else if (c && y < 18) nav.classList.remove("compact");
+        ticking = false; place();
+      });
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    var mp = false;
+    nav.addEventListener("pointermove", function (e) {
+      if (mp) return; mp = true;
+      requestAnimationFrame(function () {
+        var r = nav.getBoundingClientRect();
+        nav.style.setProperty("--mx", (e.clientX - r.left) + "px"); nav.style.setProperty("--my", (e.clientY - r.top) + "px"); mp = false;
+      });
+    });
+    var links = document.getElementById("navLinks"), hl = document.getElementById("navHl"), hv = document.getElementById("navHv");
+    var las = [].slice.call(links.querySelectorAll("a"));
+    function pos(el, a) { el.style.setProperty("--x", a.offsetLeft + "px"); el.style.setProperty("--w", a.offsetWidth + "px"); }
+    function place() { if (links.offsetParent) pos(hl, las[NI]); }
+    var pv = parseInt(ssget("axion-nav"), 10);
+    if (!isNaN(pv) && las[pv] && pv !== NI) { hl.style.transition = "none"; pos(hl, las[pv]); hl.offsetWidth; hl.style.transition = ""; }
+    requestAnimationFrame(function () { requestAnimationFrame(place); });
+    window.addEventListener("resize", place);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { hl.style.transition = "none"; place(); hl.offsetWidth; hl.style.transition = ""; });
+    ssset("axion-nav", NI);
+    las.forEach(function (a) {
+      a.addEventListener("pointerenter", function () {
+        if (!hv.classList.contains("on")) { hv.classList.add("snap"); pos(hv, a); hv.offsetWidth; hv.classList.remove("snap"); }
+        pos(hv, a); hv.classList.add("on");
+      });
+      a.addEventListener("focus", function () { pos(hv, a); hv.classList.add("on"); });
+      a.addEventListener("blur", function () { hv.classList.remove("on"); });
+      a.addEventListener("click", function () { pos(hl, a); ssset("axion-nav", las.indexOf(a)); });
+    });
+    links.addEventListener("pointerleave", function () { hv.classList.remove("on"); });
+    onScroll();
 
     /* dock */
     var idx = 0;

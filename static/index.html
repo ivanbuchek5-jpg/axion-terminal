@@ -7,7 +7,7 @@
 <link rel="icon" type="image/png" href="logo.png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<script>try{var t=localStorage.getItem('axion-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>(function(){var t=null;try{t=localStorage.getItem('axion-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#f5f8ec':'#0f110d')})()</script>
 <link rel="stylesheet" href="axion.css"/>
 </head>
 <body>
@@ -44,7 +44,7 @@
   <section class="card flush rise tbl" style="--d:4;--cm:1fr 1fr 84px;--cd:44px 1.6fr 1fr 1fr 1fr 1fr">
     <div class="card-h">
       <span class="t">Live market</span>
-      <div class="seg" id="mktSeg" style="min-width:210px">
+      <div class="seg" id="mktSeg" style="min-width:190px">
         <button data-v="all" class="on">All</button><button data-v="up">Gainers</button><button data-v="dn">Losers</button>
       </div>
     </div>
