@@ -1,0 +1,365 @@
+/* AXION TERMINAL — shared chrome + helpers */
+(function () {
+  "use strict";
+  var AX = (window.AX = window.AX || {});
+  var API = window.location.origin;
+  AX.API = API;
+
+  /* ── storage (never throws) ── */
+  function sget(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function sset(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function ssget(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+  function ssset(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ── theme ── */
+  AX.theme = function () { return document.documentElement.getAttribute("data-theme") || "dark"; };
+  AX.setTheme = function (t) {
+    document.documentElement.setAttribute("data-theme", t);
+    sset("axion-theme", t);
+    var m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.setAttribute("content", t === "light" ? "#f5f8ec" : "#0f110d");
+    window.dispatchEvent(new CustomEvent("axion:theme", { detail: t }));
+  };
+
+  /* ── icons ── */
+  var P = {
+    home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5h13V10"/><path d="M10 19.5v-5h4v5"/>',
+    prices: '<circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2c-.5-.9-1.5-1.4-2.8-1.4-1.6 0-2.7.8-2.7 2 0 1.3 1.1 1.8 2.7 2.1 1.7.3 2.9.8 2.9 2.1 0 1.2-1.2 2-2.9 2-1.4 0-2.5-.6-3-1.6"/><path d="M12 6.5v1.3M12 16.2v1.3"/>',
+    spread: '<path d="M7 4v16M7 4 4 7M7 4l3 3"/><path d="M17 20V4M17 20l-3-3M17 20l3-3"/>',
+    funding: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    converter: '<path d="M4 8h14l-3-3M20 16H6l3 3"/>',
+    chart: '<path d="M4 19V5"/><path d="M4 19h16"/><path d="m7.5 14 3.5-4 3 2.5 4.5-6"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>',
+    moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/>',
+    search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+    back: '<path d="M15 5 8 12l7 7"/>',
+    refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/>',
+    copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="3"/><path d="M15.5 8.5V7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v5.5a3 3 0 0 0 3 3h1.5"/>',
+    check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+    close: '<path d="M6 6l12 12M18 6 6 18"/>',
+    chev: '<path d="m9 6 6 6-6 6"/>',
+    alert: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5.5M12 16.2v.1"/>',
+    info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.1"/>',
+    empty: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M8.5 11h5"/>',
+    swap: '<path d="M8 4v16M8 20l-3.5-3.5M8 20l3.5-3.5"/><path d="M16 20V4M16 4l-3.5 3.5M16 4l3.5 3.5"/>'
+  };
+  AX.icon = function (n, cls) {
+    return '<svg class="i ' + (cls || "") + '" viewBox="0 0 24 24" aria-hidden="true">' + (P[n] || "") + "</svg>";
+  };
+
+  /* ── formatters ── */
+  AX.esc = function (s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  };
+  AX.num = function (n, max) {
+    return Number(n).toLocaleString("en-US", { maximumFractionDigits: max == null ? 2 : max });
+  };
+  AX.price = function (p) {
+    p = Number(p);
+    if (!p) return "—";
+    if (p < 0.000001) return "$" + p.toFixed(8);
+    if (p < 0.0001) return "$" + p.toFixed(6);
+    if (p < 0.01) return "$" + p.toFixed(5);
+    if (p < 1) return "$" + p.toFixed(4);
+    if (p < 1000) return "$" + p.toFixed(2);
+    return "$" + AX.num(p, 2);
+  };
+  AX.plain = function (n) { /* no $ */
+    n = Number(n);
+    if (!n) return "—";
+    if (n < 0.0001) return n.toFixed(8);
+    if (n < 0.01) return n.toFixed(6);
+    if (n < 1) return n.toFixed(4);
+    if (n < 100) return n.toFixed(3);
+    return AX.num(n, 2);
+  };
+  AX.vol = function (n) {
+    n = Number(n);
+    if (!n) return "—";
+    if (n >= 1e12) return "$" + (n / 1e12).toFixed(2) + "T";
+    if (n >= 1e9) return "$" + (n / 1e9).toFixed(2) + "B";
+    if (n >= 1e6) return "$" + (n / 1e6).toFixed(2) + "M";
+    return "$" + n.toFixed(0);
+  };
+  AX.pct = function (n, d) {
+    n = Number(n);
+    if (isNaN(n)) return "—";
+    return (n > 0 ? "+" : "") + n.toFixed(d == null ? 2 : d) + "%";
+  };
+  AX.cls = function (n) { return Number(n) >= 0 ? "up" : "dn"; };
+  AX.base = function (s) { return String(s || "").toUpperCase().replace("/", "").replace(/USDT$/, ""); };
+  AX.go = function (sym) { location.href = "token.html?symbol=" + encodeURIComponent(AX.base(sym)); };
+  AX.ico = function (b) { return AX.esc(AX.base(b).slice(0, 3)); };
+
+  /* ── count-up ── */
+  AX.count = function (el, to, fmt, dur) {
+    if (!el) return;
+    to = Number(to);
+    if (isNaN(to)) { el.textContent = "—"; return; }
+    var from = el._v;
+    el._v = to;
+    if (reduce || from == null || from === to) { el.textContent = fmt(to); return; }
+    if (el._raf) cancelAnimationFrame(el._raf);
+    var t0 = performance.now(), d = dur || 520;
+    (function step(t) {
+      var k = Math.min(1, (t - t0) / d), e = 1 - Math.pow(1 - k, 3);
+      el.textContent = fmt(from + (to - from) * e);
+      if (k < 1) el._raf = requestAnimationFrame(step);
+    })(t0);
+  };
+  /* first paint: count from 0 */
+  AX.countIn = function (el, to, fmt, dur) {
+    if (!el) return;
+    if (el._v == null && !reduce) { el._v = 0; el.textContent = fmt(0); }
+    AX.count(el, to, fmt, dur || 700);
+  };
+
+  /* ── sparkline ── */
+  AX.spark = function (vals, up) {
+    if (!vals || vals.length < 2) return '<svg class="spark" viewBox="0 0 300 84" preserveAspectRatio="none"></svg>';
+    var w = 300, h = 84, pad = 6;
+    var mn = Math.min.apply(0, vals), mx = Math.max.apply(0, vals), rg = mx - mn || 1;
+    var pts = vals.map(function (v, i) {
+      return [(i / (vals.length - 1)) * w, pad + (1 - (v - mn) / rg) * (h - pad * 2)];
+    });
+    var d = pts.map(function (p, i) { return (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" ");
+    var id = "sg" + Math.floor(Math.random() * 1e6);
+    var col = up === false ? "var(--neg)" : "var(--accent)";
+    return '<svg class="spark ' + (up === false ? "dn" : "") + '" viewBox="0 0 ' + w + " " + h + '" preserveAspectRatio="none">' +
+      '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".28"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient></defs>' +
+      '<path d="' + d + " L" + w + " " + h + " L0 " + h + 'Z" fill="url(#' + id + ')"/>' +
+      '<path class="ln" pathLength="1" d="' + d + '" vector-effect="non-scaling-stroke"/></svg>';
+  };
+
+  /* ── live badge ── */
+  AX.live = function (el, state, text) {
+    if (!el) return;
+    el.className = "live " + (state || "");
+    el.innerHTML = "<i></i>" + (text || "");
+  };
+  AX.skel = function (n, cols) {
+    var h = "";
+    for (var i = 0; i < (n || 6); i++) {
+      h += '<div class="skel" style="animation-delay:' + i * 60 + 'ms">';
+      for (var j = 0; j < (cols || 3); j++) h += '<i style="flex:' + (j ? 1 : 1.4) + '"></i>';
+      h += "</div>";
+    }
+    return h;
+  };
+  AX.empty = function (icon, text) {
+    return '<div class="empty">' + AX.icon(icon) + "<span>" + AX.esc(text) + "</span></div>";
+  };
+
+  /* ── segmented control with sliding pill ── */
+  AX.seg = function (el, onChange, initial) {
+    var btns = [].slice.call(el.querySelectorAll("button"));
+    var pill = document.createElement("span");
+    pill.className = "seg-pill";
+    el.insertBefore(pill, el.firstChild);
+    el.style.setProperty("--n", btns.length);
+    function set(i, silent) {
+      el.style.setProperty("--i", i);
+      btns.forEach(function (b, k) { b.classList.toggle("on", k === i); });
+      if (!silent && onChange) onChange(btns[i].getAttribute("data-v"), i);
+    }
+    btns.forEach(function (b, i) { b.addEventListener("click", function () { set(i); }); });
+    var start = 0;
+    btns.forEach(function (b, i) { if (b.getAttribute("data-v") === initial || b.classList.contains("on")) start = i; });
+    set(start, true);
+    return { set: function (v) { btns.forEach(function (b, i) { if (b.getAttribute("data-v") === v) set(i, true); }); } };
+  };
+
+  /* ── toast ── */
+  var toastBox;
+  AX.toast = function (text, ok) {
+    if (!toastBox) {
+      toastBox = document.createElement("div");
+      toastBox.className = "toasts";
+      toastBox.setAttribute("role", "status");
+      document.body.appendChild(toastBox);
+    }
+    var t = document.createElement("div");
+    t.className = "toast";
+    t.innerHTML = (ok === false ? AX.icon("alert") : AX.icon("check")) + "<span>" + AX.esc(text) + "</span>";
+    toastBox.appendChild(t);
+    setTimeout(function () {
+      t.classList.add("out");
+      setTimeout(function () { t.remove(); }, 240);
+    }, 2200);
+  };
+
+  /* ── bottom sheet ── */
+  AX.sheet = function (opts) {
+    var scrim = document.createElement("div");
+    scrim.className = "scrim";
+    var sh = document.createElement("div");
+    sh.className = "sheet";
+    sh.setAttribute("role", "dialog");
+    sh.setAttribute("aria-modal", "true");
+    sh.innerHTML = '<div class="sheet-grab"><i></i></div><div class="sheet-h"><b>' + AX.esc(opts.title || "") +
+      '</b><button class="icon-btn" style="width:38px;height:38px;border-radius:13px" aria-label="Close">' + AX.icon("close") + '</button></div><div class="sheet-body"></div>';
+    var body = sh.querySelector(".sheet-body");
+    if (typeof opts.content === "string") body.innerHTML = opts.content; else if (opts.content) body.appendChild(opts.content);
+    document.body.appendChild(scrim);
+    document.body.appendChild(sh);
+    document.body.style.overflow = "hidden";
+    var closed = false;
+    function close() {
+      if (closed) return;
+      closed = true;
+      scrim.classList.add("out");
+      sh.classList.add("out");
+      sh.style.transform = "";
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+      setTimeout(function () { scrim.remove(); sh.remove(); if (opts.onClose) opts.onClose(); }, 300);
+    }
+    function onKey(e) { if (e.key === "Escape") close(); }
+    document.addEventListener("keydown", onKey);
+    scrim.addEventListener("click", close);
+    sh.querySelector(".icon-btn").addEventListener("click", close);
+    /* drag to dismiss — velocity aware */
+    var grab = sh.querySelector(".sheet-grab"), y0 = 0, t0 = 0, dy = 0, drag = false;
+    grab.addEventListener("pointerdown", function (e) {
+      drag = true; y0 = e.clientY; t0 = performance.now(); dy = 0;
+      grab.setPointerCapture(e.pointerId);
+      sh.style.transition = "none";
+    });
+    grab.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      dy = Math.max(0, e.clientY - y0);
+      sh.style.transform = "translate(-50%," + dy + "px)";
+    });
+    function end() {
+      if (!drag) return;
+      drag = false;
+      var v = dy / Math.max(1, performance.now() - t0);
+      sh.style.transition = "";
+      if (dy > 110 || v > 0.11) close(); else sh.style.transform = "";
+    }
+    grab.addEventListener("pointerup", end);
+    grab.addEventListener("pointercancel", end);
+    if (opts.onOpen) opts.onOpen(sh, body);
+    return { close: close, el: sh, body: body };
+  };
+
+  /* ── chrome ── */
+  var NAV = [
+    ["home", "index.html", "Home"],
+    ["prices", "prices.html", "Prices"],
+    ["spread", "spread.html", "Spread"],
+    ["funding", "funding.html", "Funding"],
+    ["converter", "converter.html", "Convert"],
+    ["chart", "chart.html", "Chart"]
+  ];
+
+  AX.init = function (page, opts) {
+    opts = opts || {};
+    var shell = document.querySelector(".shell");
+    var top = document.createElement("div");
+    top.innerHTML =
+      '<header class="top rise">' +
+      '<a class="brand" href="index.html" aria-label="AXION TERMINAL"><span class="logo"><img src="logo.png" alt=""></span>' +
+      '<span class="brand-t"><b>AXION</b><i>TERMINAL</i></span></a>' +
+      '<button class="icon-btn" id="themeBtn" aria-label="Toggle theme"></button>' +
+      '<label class="search">' + AX.icon("search") + '<input id="navSearch" placeholder="Search token — BTC, ETH, SOL…" autocomplete="off" spellcheck="false"></label>' +
+      "</header>" +
+      (opts.ticker === false ? "" : '<div class="ticker rise" style="--d:1"><div class="tk-track" id="tkTrack"><div class="tk-load">Loading market data…</div></div></div>');
+    shell.insertBefore(top, shell.firstChild);
+    while (top.firstChild) shell.insertBefore(top.firstChild, top);
+    top.remove();
+
+    /* theme button */
+    var tb = document.getElementById("themeBtn");
+    function paintTheme() { tb.innerHTML = AX.icon(AX.theme() === "light" ? "moon" : "sun"); }
+    paintTheme();
+    tb.addEventListener("click", function () { AX.setTheme(AX.theme() === "light" ? "dark" : "light"); paintTheme(); });
+
+    /* dock */
+    var idx = 0;
+    NAV.forEach(function (n, i) { if (n[0] === page) idx = i; });
+    var prev = parseInt(ssget("axion-dock"), 10);
+    if (isNaN(prev)) prev = idx;
+    var dock = document.createElement("nav");
+    dock.className = "dock";
+    dock.setAttribute("aria-label", "Main");
+    dock.innerHTML = '<div class="dock-in"><span class="dock-pill" style="--i:' + prev + '"></span>' +
+      NAV.map(function (n) {
+        return '<a href="' + n[1] + '"' + (n[0] === page ? ' aria-current="page"' : "") + ">" + AX.icon(n[0]) + "<span>" + n[2] + "</span></a>";
+      }).join("") + "</div>";
+    document.body.appendChild(dock);
+    var pill = dock.querySelector(".dock-pill");
+    requestAnimationFrame(function () { requestAnimationFrame(function () { pill.style.setProperty("--i", idx); }); });
+    ssset("axion-dock", idx);
+    dock.addEventListener("click", function (e) {
+      var a = e.target.closest("a");
+      if (!a) return;
+      var k = NAV.map(function (n) { return n[1]; }).indexOf(a.getAttribute("href"));
+      if (k > -1) { pill.style.setProperty("--i", k); ssset("axion-dock", k); }
+    });
+
+    /* search autocomplete → token page */
+    var si = document.getElementById("navSearch");
+    if (window.initAutocomplete) window.initAutocomplete(si, function (sym, base) { AX.go(base); });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "/" && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || "")) { e.preventDefault(); si.focus(); }
+    });
+
+    if (opts.ticker !== false) AX.ticker();
+    document.documentElement.classList.add("ready");
+  };
+
+  /* ── ticker ── */
+  var tkFirst = true;
+  AX.ticker = function () {
+    var track = document.getElementById("tkTrack");
+    if (!track) return;
+    function build(j) {
+      var items = [], i;
+      (j.tokens || []).forEach(function (t) {
+        items.push('<a class="tk" href="token.html?symbol=' + encodeURIComponent(AX.base(t.symbol)) + '"><span class="m">' + AX.esc(t.label || t.symbol) + "</span><b>" + AX.price(t.price) +
+          '</b><span class="' + (t.up ? "up" : "dn") + '">' + (t.up ? "▲" : "▼") + " " + (t.up ? "+" : "") + AX.esc(t.change_8h) + "%</span></a>");
+      });
+      (j.spreads || []).forEach(function (s) {
+        items.push('<a class="tk" href="token.html?symbol=' + encodeURIComponent(AX.base(s.symbol)) + '"><span class="tag">S</span><span class="m">' + AX.esc(AX.base(s.symbol)) + '</span><b class="up">+' + Number(s.spread).toFixed(3) + "%</b></a>");
+      });
+      (j.funding || []).forEach(function (f) {
+        items.push('<a class="tk" href="token.html?symbol=' + encodeURIComponent(AX.base(f.symbol)) + '"><span class="tag">F</span><span class="m">' + AX.esc(AX.base(f.symbol)) + '</span><b class="' + (f.positive ? "up" : "dn") + '">' + (f.positive ? "+" : "") + Number(f.rate).toFixed(4) + "%</b></a>");
+      });
+      if (!items.length) return;
+      var prev = track.getAnimations ? track.getAnimations()[0] : null;
+      var t = prev ? prev.currentTime : null;
+      var h = items.join("");
+      track.innerHTML = h + h;
+      var half = track.scrollWidth / 2;
+      track.style.setProperty("--tk-dur", Math.max(30, half / 42) + "s");
+      if (t != null && track.getAnimations) {
+        var a = track.getAnimations()[0];
+        if (a) a.currentTime = t;
+      }
+    }
+    function load() {
+      fetch(API + "/api/ticker").then(function (r) { return r.json(); }).then(build).catch(function () {});
+    }
+    load();
+    setInterval(load, 15000);
+  };
+
+  /* ── data helper with simple error surface ── */
+  AX.get = function (path) {
+    return fetch(API + path).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.json();
+    });
+  };
+
+  /* ── TradingView theme colors ── */
+  AX.tvColors = function () {
+    return AX.theme() === "light"
+      ? { theme: "light", bg: "#ffffff", grid: "#ebefdf" }
+      : { theme: "dark", bg: "#171a13", grid: "#21261b" };
+  };
+})();

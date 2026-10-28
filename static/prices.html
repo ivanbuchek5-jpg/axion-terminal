@@ -1,239 +1,152 @@
 <!DOCTYPE html>
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<html lang="en" data-theme="dark"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#0f110d"/>
 <title>AXION TERMINAL — Prices</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<script>tailwind.config={darkMode:"class",theme:{extend:{colors:{"sf":"#111319","sf-low":"#191b22","sf-ctr":"#1d1f26","sf-hi":"#282a30","sf-top":"#33343b","sf-min":"#0c0e14","brd":"#3b4a44","tx":"#e2e2ea","tx2":"#bacac2","pri":"#46f1c5","pri-c":"#00d4aa","grn":"#4ae176","red":"#ffb4ab"},fontFamily:{"sans":["Geist"],"mono":["JetBrains Mono","monospace"]}}}}</script>
-<style>
-body{background:#111319;color:#e2e2ea;-webkit-font-smoothing:antialiased}
-.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
-.no-sb::-webkit-scrollbar{display:none}.no-sb{-ms-overflow-style:none;scrollbar-width:none}
-a.nav-active{color:#46f1c5;border-bottom:2px solid #46f1c5}
-@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}.pulse-dot{animation:pulse-dot 2s ease-in-out infinite}
-@keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin .8s linear infinite}
-</style>
-<script src="autocomplete.js"></script>
 <link rel="icon" type="image/png" href="logo.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script>try{var t=localStorage.getItem('axion-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="axion.css"/>
 </head>
-<body class="bg-sf text-tx h-screen w-screen overflow-hidden flex flex-col font-sans text-sm">
+<body>
+<div class="shell">
+<main>
 
-<nav class="hidden md:flex bg-sf border-b border-brd justify-between items-center w-full px-4 h-14 shrink-0">
-  <a href="index.html" class="font-bold text-xl text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
-  <div class="flex items-center h-full gap-1 text-xs">
-    <a href="index.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Home</a>
-    <a href="prices.html" class="nav-active h-full flex items-center px-4 text-[14px]">Prices</a>
-    <a href="spread.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Spread</a>
-    <a href="funding.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Funding</a>
-    <a href="converter.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Converter</a>
-    <a href="chart.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Chart</a>
-  </div>
-  <div class="flex items-center bg-[#12141a] border border-[#2d3139] px-2 h-8">
-    <span class="material-symbols-outlined text-tx2 mr-1" style="font-size:16px">search</span>
-    <input class="bg-transparent outline-none font-mono text-xs text-tx w-36 p-0" placeholder="Search pair..."/>
-  </div>
-</nav>
-<header class="md:hidden flex items-center justify-between px-4 h-12 shrink-0 bg-sf border-b border-brd">
-  <a href="index.html" class="font-bold text-lg text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
-  <div class="flex gap-3"><span class="material-symbols-outlined text-tx2" style="font-size:22px">search</span></div>
-</header>
-
-<main class="flex-1 overflow-y-auto no-sb p-4 flex flex-col gap-4 pb-20 md:pb-4">
-
-  <!-- Token selector + header -->
-  <div class="flex flex-col md:flex-row md:items-end gap-4 md:gap-8">
-    <div>
-      <div class="flex items-center gap-3">
-        <div class="relative">
-          <input id="symbolInput" value="BTC/USDT"
-            class="bg-sf-ctr border border-brd text-tx font-mono text-lg font-bold px-3 py-1 outline-none w-36 focus:border-pri-c"
-            placeholder="BTC/USDT" autocomplete="off"/>
+  <section class="card hero rise" style="--d:2">
+    <div class="row-f" style="margin-bottom:12px">
+      <span class="cap">Spot prices by exchange</span><span class="sp"></span>
+      <span class="live" id="live"><i></i>LOADING</span>
+    </div>
+    <div class="grid g2" style="align-items:end;gap:20px">
+      <div>
+        <div class="row-f" style="gap:12px;margin-bottom:10px">
+          <div style="width:170px"><input class="field" id="symbolInput" value="BTC/USDT" autocomplete="off" spellcheck="false" aria-label="Token"/></div>
+          <span class="sub" id="tokenName">Bitcoin</span>
         </div>
-        <span id="tokenName" class="text-tx2 text-xs">Bitcoin</span>
+        <div class="big num" id="headerPrice">—</div>
+        <div class="row-f" style="margin-top:12px"><span class="chip" id="headerChange">—</span><span class="sub" id="refNote"></span></div>
       </div>
-      <div class="flex items-baseline gap-3 mt-1">
-        <span id="headerPrice" class="font-mono text-2xl font-bold text-pri">—</span>
-        <span id="headerChange" class="font-mono text-sm text-tx2">—</span>
+      <div>
+        <div class="cap" style="margin-bottom:6px">Session price trace</div>
+        <div id="trace"><svg class="spark" viewBox="0 0 300 84"></svg></div>
+        <div class="sub num" id="traceNote" style="font-size:.75rem;margin-top:4px">collecting points every 10s…</div>
       </div>
     </div>
-    <div class="flex gap-6 font-mono text-xs text-tx2">
-      <div>24h High <span id="high24" class="text-tx ml-1">—</span></div>
-      <div>24h Low  <span id="low24" class="text-tx ml-1">—</span></div>
-      <div>24h Vol  <span id="vol24" class="text-tx ml-1">—</span></div>
-    </div>
-    <div class="ml-auto hidden md:flex items-center gap-2 text-xs">
-      <span id="liveDot" class="w-2 h-2 bg-tx2 rounded-full"></span>
-      <span id="liveLabel" class="text-tx2 font-mono tracking-wider">LOADING</span>
-    </div>
-  </div>
+  </section>
 
-  <!-- Tables row -->
-  <div class="flex flex-col md:flex-row gap-4">
+  <section class="grid g3 rise" style="--d:3">
+    <div class="card stat"><div class="cap">24h high</div><div class="v m" id="high24">—</div></div>
+    <div class="card stat"><div class="cap">24h low</div><div class="v m" id="low24">—</div></div>
+    <div class="card stat"><div class="cap">24h volume</div><div class="v m" id="vol24">—</div></div>
+  </section>
 
-    <!-- Exchange Prices Table -->
-    <div class="flex-1 bg-sf-min border border-brd">
-      <div class="h-8 border-b border-brd bg-sf-ctr flex items-center px-4 font-mono text-[10px] text-tx2 uppercase tracking-widest">
-        Spot Prices by Exchange
-      </div>
-      <!-- Desktop header -->
-      <div class="hidden md:grid grid-cols-[160px_1fr_1fr_1fr_100px] items-center h-8 px-4 border-b border-brd font-mono text-[10px] text-tx2 uppercase tracking-wider">
-        <div>Exchange</div><div class="text-right">Price (USDT)</div><div class="text-right">Bid</div><div class="text-right">Ask</div><div class="text-right">24h %</div>
-      </div>
-      <!-- Mobile header -->
-      <div class="md:hidden grid grid-cols-[1fr_1fr_1fr] items-center h-8 px-4 border-b border-brd font-mono text-[10px] text-tx2 uppercase">
-        <div>Exchange</div><div class="text-right">Price</div><div class="text-right">24h%</div>
-      </div>
-
-      <!-- Loading -->
-      <div id="priceLoading" class="flex items-center justify-center py-10">
-        <span class="material-symbols-outlined text-pri spin" style="font-size:28px">refresh</span>
-      </div>
+  <section class="grid rise" style="--d:4;grid-template-columns:minmax(0,1fr);gap:14px" id="lay">
+    <div class="card flush tbl" style="--cm:1.3fr 1fr 70px;--cd:1.3fr 1fr 1fr 1fr 90px">
+      <div class="card-h"><span class="t">Exchange quotes</span><span class="chip sm" id="cnt">—</span></div>
+      <div class="thead"><div>Exchange</div><div class="r">Price</div><div class="r dm">Bid</div><div class="r dm">Ask</div><div class="r">24h</div></div>
       <div id="priceBody"></div>
     </div>
-
-    <!-- Market Activity sidebar (desktop only) -->
-    <div class="hidden md:flex flex-col w-[280px] bg-sf-min border border-brd shrink-0">
-      <div class="h-8 border-b border-brd bg-sf-ctr flex items-center px-4 font-mono text-[10px] text-tx2 uppercase tracking-widest">Price Deviation</div>
-      <div id="deviationBody" class="flex-1 overflow-hidden"></div>
+    <div class="card flush">
+      <div class="card-h"><span class="t">Price deviation</span><span class="chip sm up" id="maxDev">—</span></div>
+      <div id="deviationBody"></div>
     </div>
-  </div>
+  </section>
 </main>
+</div>
 
-<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 bg-sf-ctr border-t border-brd">
-<a href="index.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">home</span><span class="text-[9px] mt-0.5 font-mono">Home</span></a>
-<a href="spread.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">swap_vert</span><span class="text-[9px] mt-0.5 font-mono">Spread</span></a>
-<a href="funding.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">schedule</span><span class="text-[9px] mt-0.5 font-mono">Funding</span></a>
-<a href="chart.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">monitoring</span><span class="text-[9px] mt-0.5 font-mono">Charts</span></a>
-<a href="converter.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">currency_exchange</span><span class="text-[9px] mt-0.5 font-mono">Converter</span></a>
-</nav>
-
+<script src="autocomplete.js"></script>
+<script src="shared.js"></script>
 <script>
-const API = window.location.origin;
-const NAMES = {BTCUSDT:"Bitcoin",ETHUSDT:"Ethereum",SOLUSDT:"Solana",BNBUSDT:"Binance Coin",XRPUSDT:"Ripple",DOGEUSDT:"Dogecoin",AVAXUSDT:"Avalanche"};
+(function(){
+  AX.init("prices");
+  var NAMES = {BTC:"Bitcoin",ETH:"Ethereum",SOL:"Solana",BNB:"BNB",XRP:"Ripple",DOGE:"Dogecoin",AVAX:"Avalanche",ADA:"Cardano",LINK:"Chainlink",DOT:"Polkadot",TRX:"TRON",TON:"Toncoin",SHIB:"Shiba Inu",LTC:"Litecoin"};
+  var inp = document.getElementById("symbolInput");
+  var qs = new URLSearchParams(location.search).get("symbol");
+  if (qs) inp.value = AX.base(qs) + "/USDT";
+  var hist = [], histSym = "", first = true;
 
-function fmt(n) {
-  if (!n) return "—";
-  if (n < 0.0001) return n.toFixed(8);
-  if (n < 1)   return n.toFixed(4);
-  return n.toLocaleString("en-US", {maximumFractionDigits:2});
-}
-function fmtVol(n) {
-  if (!n) return "—";
-  if (n >= 1e9) return (n/1e9).toFixed(2) + "B";
-  if (n >= 1e6) return (n/1e6).toFixed(2) + "M";
-  return n.toLocaleString();
-}
+  var mq = matchMedia("(min-width:900px)");
+  function lay(){ document.getElementById("lay").style.gridTemplateColumns = mq.matches ? "minmax(0,1fr) 320px" : "minmax(0,1fr)"; }
+  lay(); (mq.addEventListener ? mq.addEventListener("change", lay) : mq.addListener(lay));
 
-async function loadPrices() {
-  const raw = document.getElementById("symbolInput").value.toUpperCase().replace("/","").replace("USDT","");
-  const symbol = raw + "USDT";
-  document.getElementById("tokenName").textContent = NAMES[symbol] || raw;
-  document.getElementById("priceLoading").classList.remove("hidden");
-  document.getElementById("priceBody").innerHTML = "";
+  function sym(){ return AX.base(inp.value); }
 
-  const dot   = document.getElementById("liveDot");
-  const label = document.getElementById("liveLabel");
-  dot.className   = "w-2 h-2 bg-tx2 rounded-full";
-  label.textContent = "LOADING";
-
-  try {
-    const res  = await fetch(`${API}/api/prices?symbol=${symbol}`);
-    const json = await res.json();
-    const data = json.data || [];
-
-    document.getElementById("priceLoading").classList.add("hidden");
-
-    // Header stats from first (cheapest isn't always right — use average)
-    if (data.length > 0) {
-      const avg = data.reduce((s,d) => s + d.price, 0) / data.length;
-      const ref = data[0];
-      document.getElementById("headerPrice").textContent = "$" + fmt(ref.price);
-      const chg = ref.change24h;
-      const chEl = document.getElementById("headerChange");
-      chEl.textContent = (chg >= 0 ? "↑ +" : "↓ ") + chg.toFixed(2) + "%";
-      chEl.className   = "font-mono text-sm " + (chg >= 0 ? "text-grn" : "text-red");
-      document.getElementById("high24").textContent = "$" + fmt(ref.high24h);
-      document.getElementById("low24").textContent  = "$" + fmt(ref.low24h);
-      document.getElementById("vol24").textContent  = fmtVol(ref.volume);
-
-      // Render rows
-      const priceBody = document.getElementById("priceBody");
-      data.forEach(e => {
-        const cc = e.change24h >= 0 ? "text-grn" : "text-red";
-        const sign = e.change24h >= 0 ? "+" : "";
-        // Spread between bid and ask
-        const bidAskSpread = e.ask > 0 && e.bid > 0
-          ? ((e.ask - e.bid) / e.bid * 100).toFixed(3) + "%"
-          : "—";
-
-        priceBody.insertAdjacentHTML("beforeend", `
-          <div class="border-b border-brd hover:bg-sf-hi transition-colors font-mono text-[13px]">
-            <div class="hidden md:grid grid-cols-[160px_1fr_1fr_1fr_100px] items-center h-11 px-4">
-              <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-sm" style="background:${e.color}"></span>${e.exchange}
-              </div>
-              <div class="text-right text-pri">$${fmt(e.price)}</div>
-              <div class="text-right text-tx2">${e.bid > 0 ? "$" + fmt(e.bid) : "—"}</div>
-              <div class="text-right text-tx2">${e.ask > 0 ? "$" + fmt(e.ask) : "—"}</div>
-              <div class="text-right ${cc}">${sign}${e.change24h.toFixed(2)}%</div>
-            </div>
-            <div class="md:hidden grid grid-cols-[1fr_1fr_1fr] items-center h-11 px-4">
-              <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-sm" style="background:${e.color}"></span>${e.exchange}
-              </div>
-              <div class="text-right text-pri">$${fmt(e.price)}</div>
-              <div class="text-right ${cc}">${sign}${e.change24h.toFixed(2)}%</div>
-            </div>
-          </div>`);
-      });
-
-      // Deviation sidebar
-      const maxPrice = Math.max(...data.map(d => d.price));
-      const minPrice = Math.min(...data.map(d => d.price));
-      const devBody = document.getElementById("deviationBody");
-      devBody.innerHTML = `
-        <div class="px-4 py-2 font-mono text-[10px] text-tx2 border-b border-brd/50 flex justify-between">
-          <span>Max deviation:</span>
-          <span class="text-grn">+${((maxPrice-minPrice)/minPrice*100).toFixed(4)}%</span>
-        </div>
-        ${data.map(e => {
-          const dev = ((e.price - minPrice) / minPrice * 100);
-          const barW = maxPrice > minPrice ? ((e.price - minPrice)/(maxPrice-minPrice)*100).toFixed(1) : 0;
-          return `<div class="px-4 py-2 border-b border-brd/30">
-            <div class="flex justify-between font-mono text-[11px] mb-1">
-              <span>${e.exchange}</span>
-              <span class="text-pri">$${fmt(e.price)}</span>
-            </div>
-            <div class="w-full h-1 bg-brd overflow-hidden">
-              <div class="h-full bg-pri-c" style="width:${barW}%"></div>
-            </div>
-          </div>`;
-        }).join("")}`;
-
-      dot.className = "w-2 h-2 bg-grn rounded-full pulse-dot";
-      label.className = "text-grn font-mono tracking-wider";
-      label.textContent = "LIVE DATA";
+  function load(reset){
+    var b = sym(), s = b + "USDT";
+    document.getElementById("tokenName").textContent = NAMES[b] || b;
+    if (reset){
+      first = true; hist = [];
+      document.getElementById("priceBody").innerHTML = AX.skel(4, 3);
+      document.getElementById("deviationBody").innerHTML = AX.skel(4, 2);
+      AX.live(document.getElementById("live"), "", "LOADING");
     }
-  } catch (e) {
-    console.error(e);
-    document.getElementById("priceLoading").classList.add("hidden");
-    document.getElementById("priceBody").innerHTML =
-      `<div class="py-10 text-center font-mono text-xs text-red">Failed to load — is Flask running?</div>`;
-    dot.className = "w-2 h-2 bg-red rounded-full";
-    label.className = "text-red font-mono";
-    label.textContent = "ERROR";
-  }
-}
+    AX.get("/api/prices?symbol=" + encodeURIComponent(s)).then(function(j){
+      var data = j.data || [];
+      if (b !== sym()) return;
+      if (!data.length){
+        document.getElementById("priceBody").innerHTML = AX.empty("empty", "No quotes for " + b);
+        document.getElementById("deviationBody").innerHTML = "";
+        AX.live(document.getElementById("live"), "err", "NO DATA"); return;
+      }
+      var ref = data[0];
+      var hp = document.getElementById("headerPrice");
+      if (hp._sym !== b){ hp._v = null; hp._sym = b; }
+      (first ? AX.countIn : AX.count)(hp, ref.price, function(v){ return AX.price(v); });
+      var c = document.getElementById("headerChange");
+      c.className = "chip " + AX.cls(ref.change24h);
+      c.textContent = AX.pct(ref.change24h) + " · 24h";
+      document.getElementById("refNote").textContent = "via " + ref.exchange;
+      var st = data.filter(function(d){ return d.high24h > 0 && d.low24h > 0; })[0] || ref;
+      document.getElementById("high24").textContent = st.high24h > 0 ? AX.price(st.high24h) : "—";
+      document.getElementById("low24").textContent = st.low24h > 0 ? AX.price(st.low24h) : "—";
+      document.getElementById("vol24").textContent = AX.vol(st.volume);
+      document.getElementById("cnt").textContent = data.length + " venues";
 
-loadPrices();
-setInterval(loadPrices, 10000);
-// Autocomplete для вибору символу
-const symInput = document.getElementById("symbolInput");
-if (symInput) initAutocomplete(symInput, (sym, base) => {
-  symInput.value = base + "/USDT";
-  loadPrices();
-});
+      document.getElementById("priceBody").innerHTML = data.map(function(e, i){
+        return '<div class="trow' + (first ? " fresh" : "") + '" style="--d:' + i + '" onclick="AX.go(\'' + b + '\')">' +
+          '<div class="ex"><span class="dot" style="background:' + AX.esc(e.color) + '"></span>' + AX.esc(e.exchange) + "</div>" +
+          '<div class="r">' + AX.price(e.price) + "</div>" +
+          '<div class="r dm mu">' + (e.bid > 0 ? AX.price(e.bid) : "—") + "</div>" +
+          '<div class="r dm mu">' + (e.ask > 0 ? AX.price(e.ask) : "—") + "</div>" +
+          '<div class="r ' + AX.cls(e.change24h) + '">' + AX.pct(e.change24h) + "</div></div>";
+      }).join("");
+
+      var prices = data.map(function(d){ return d.price; });
+      var mx = Math.max.apply(0, prices), mn = Math.min.apply(0, prices);
+      var md = document.getElementById("maxDev");
+      md.textContent = "max " + AX.pct((mx - mn) / mn * 100, 4);
+      document.getElementById("deviationBody").innerHTML = data.map(function(e){
+        var w = mx > mn ? (e.price - mn) / (mx - mn) : 0;
+        return '<div class="item" style="cursor:default;flex-direction:column;align-items:stretch;gap:8px">' +
+          '<div class="row-f" style="gap:8px"><span class="ex"><span class="dot" style="background:' + AX.esc(e.color) + '"></span>' + AX.esc(e.exchange) + '</span><span class="sp"></span><span class="num" style="font-size:.8125rem;font-weight:600">' + AX.price(e.price) + "</span></div>" +
+          '<div class="bar"><i style="--w:' + (first ? 0 : w) + '" data-w="' + w + '"></i></div></div>';
+      }).join("");
+      if (first) requestAnimationFrame(function(){ requestAnimationFrame(function(){
+        [].forEach.call(document.querySelectorAll("#deviationBody .bar i"), function(i){ i.style.setProperty("--w", i.getAttribute("data-w")); });
+      }); });
+
+      /* session trace */
+      if (histSym !== b){ hist = []; histSym = b; }
+      hist.push(ref.price); if (hist.length > 60) hist.shift();
+      var tr = document.getElementById("trace");
+      if (hist.length >= 2){
+        tr.innerHTML = AX.spark(hist, hist[hist.length - 1] >= hist[0]);
+        document.getElementById("traceNote").textContent = hist.length + " points · " + AX.pct((hist[hist.length - 1] - hist[0]) / hist[0] * 100, 3) + " since open";
+      }
+      AX.live(document.getElementById("live"), "ok", "LIVE");
+      first = false;
+    }).catch(function(){
+      if (first){ document.getElementById("priceBody").innerHTML = AX.empty("alert", "Failed to load quotes"); }
+      AX.live(document.getElementById("live"), "err", "ERROR");
+    });
+  }
+
+  initAutocomplete(inp, function(s, base){ inp.value = base + "/USDT"; histSym = ""; load(true); });
+  inp.addEventListener("focus", function(){ inp.select(); });
+  load(true);
+  setInterval(function(){ load(false); }, 10000);
+})();
 </script>
 </body></html>
