@@ -1,286 +1,98 @@
 <!DOCTYPE html>
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<html lang="en" data-theme="dark"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#0f110d"/>
 <title>AXION TERMINAL — Spread</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<script>tailwind.config={darkMode:"class",theme:{extend:{colors:{"sf":"#111319","sf-low":"#191b22","sf-ctr":"#1d1f26","sf-hi":"#282a30","sf-top":"#33343b","sf-min":"#0c0e14","brd":"#3b4a44","tx":"#e2e2ea","tx2":"#bacac2","pri":"#46f1c5","pri-c":"#00d4aa","grn":"#4ae176","red":"#ffb4ab"},fontFamily:{"sans":["Geist"],"mono":["JetBrains Mono","monospace"]}}}}</script>
-<style>
-body{background:#111319;color:#e2e2ea;-webkit-font-smoothing:antialiased}
-.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
-.no-sb::-webkit-scrollbar{display:none}.no-sb{-ms-overflow-style:none;scrollbar-width:none}
-a.nav-active{color:#46f1c5;border-bottom:2px solid #46f1c5}
-@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}.pulse-dot{animation:pulse-dot 2s ease-in-out infinite}
-@keyframes spin{to{transform:rotate(360deg)}}.spin{animation:spin .8s linear infinite}
-.row-flash{animation:flash .4s ease}
-@keyframes flash{0%{background:#46f1c520}100%{background:transparent}}
-</style>
-<script src="autocomplete.js"></script>
 <link rel="icon" type="image/png" href="logo.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script>try{var t=localStorage.getItem('axion-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="axion.css"/>
 </head>
-<body class="bg-sf text-tx h-screen w-screen overflow-hidden flex flex-col font-sans text-sm">
-
-<nav class="hidden md:flex bg-sf border-b border-brd justify-between items-center w-full px-4 h-14 shrink-0">
-  <a href="index.html" class="font-bold text-xl text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
-  <div class="flex items-center h-full gap-1 text-xs">
-    <a href="index.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Home</a>
-    <a href="prices.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Prices</a>
-    <a href="spread.html" class="nav-active h-full flex items-center px-4 text-[14px]">Spread</a>
-    <a href="funding.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Funding</a>
-    <a href="converter.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Converter</a>
-    <a href="chart.html" class="text-tx2 h-full flex items-center px-4 hover:bg-sf-hi text-[14px]">Chart</a>
-  </div>
-  <div class="flex items-center bg-[#12141a] border border-[#2d3139] px-2 h-8">
-    <span class="material-symbols-outlined text-tx2 mr-1" style="font-size:16px">search</span>
-    <input id="searchInput" class="bg-transparent outline-none font-mono text-xs text-tx w-36 p-0" placeholder="Search pair..."/>
-  </div>
-</nav>
-<header class="md:hidden flex items-center justify-between px-4 h-12 shrink-0 bg-sf border-b border-brd">
-  <a href="index.html" class="font-bold text-lg text-pri tracking-tighter flex items-center gap-2 hover:opacity-80 transition-opacity"><img src="logo.png" class="h-8 w-8 object-contain" style="mix-blend-mode:screen" alt="logo"/>AXION TERMINAL</a>
-  <div class="flex gap-3"><span class="material-symbols-outlined text-tx2" style="font-size:22px">search</span></div>
-</header>
-
-<main class="flex-1 overflow-y-auto no-sb p-4 flex flex-col gap-4 pb-20 md:pb-4">
-
-  <!-- Page Header -->
-  <div class="bg-sf-min border border-brd p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-    <div>
-      <h1 class="font-semibold text-xl text-tx">Global Spread Scanner</h1>
-      <p class="text-xs text-tx2 mt-1">Cross-exchange spread analysis — Binance · Bybit · MEXC · Gate.io</p>
-    </div>
-    <div class="flex items-center gap-3 flex-wrap">
-      <!-- Live indicator -->
-      <div class="flex items-center gap-1.5 text-xs">
-        <span id="liveDot" class="w-2 h-2 bg-grn rounded-full pulse-dot"></span>
-        <span id="liveLabel" class="text-grn font-mono">LOADING...</span>
+<body>
+<div class="shell">
+<main>
+  <section class="card hero rise" style="--d:2">
+    <div class="row-f" style="margin-bottom:10px"><span class="cap">Global spread scanner</span><span class="sp"></span><span class="live" id="live"><i></i>LOADING</span></div>
+    <div class="h1">Cross-exchange spreads</div>
+    <p class="sub" style="margin-top:6px">Binance · Bybit · MEXC · Gate.io — best price gaps, refreshed every 15s</p>
+    <div class="row-f" style="margin-top:18px">
+      <div class="seg" id="minSeg" style="min-width:300px;max-width:100%">
+        <button data-v="0" class="on">All</button><button data-v="0.1">≥0.1%</button><button data-v="0.3">≥0.3%</button><button data-v="0.5">≥0.5%</button><button data-v="1">≥1%</button>
       </div>
-      <!-- Min spread filter -->
-      <div class="flex items-center gap-2 font-mono text-xs">
-        <span class="text-tx2">Min spread:</span>
-        <select id="minSpread" onchange="renderTable()" class="bg-sf-ctr border border-brd text-tx px-2 py-1 outline-none">
-          <option value="0" selected>All</option>
-          <option value="0.1">≥ 0.1%</option>
-          <option value="0.3">≥ 0.3%</option>
-          <option value="0.5">≥ 0.5%</option>
-          <option value="1.0">≥ 1.0%</option>
-        </select>
-      </div>
-      <!-- Refresh button -->
-      <button onclick="loadSpread()" class="border border-brd text-tx2 text-[10px] px-3 py-1 font-mono hover:border-pri-c hover:text-pri-c flex items-center gap-1">
-        <span id="refreshIcon" class="material-symbols-outlined" style="font-size:13px">refresh</span> Refresh
-      </button>
+      <span class="sp"></span>
+      <button class="btn sm" id="refresh"><span class="rI" style="display:grid"></span><span>Refresh</span></button>
     </div>
-  </div>
+  </section>
 
-  <!-- Stats row -->
-  <div class="hidden md:grid grid-cols-4 gap-3">
-    <div class="bg-sf-min border border-brd px-4 py-3">
-      <div class="text-[10px] text-tx2 uppercase tracking-widest font-mono">Pairs Scanned</div>
-      <div id="statPairs" class="font-mono text-xl text-tx mt-1">—</div>
-    </div>
-    <div class="bg-sf-min border border-brd px-4 py-3">
-      <div class="text-[10px] text-tx2 uppercase tracking-widest font-mono">Best Spread</div>
-      <div id="statBest" class="font-mono text-xl text-grn mt-1">—</div>
-    </div>
-    <div class="bg-sf-min border border-brd px-4 py-3">
-      <div class="text-[10px] text-tx2 uppercase tracking-widest font-mono">Avg Spread</div>
-      <div id="statAvg" class="font-mono text-xl text-pri mt-1">—</div>
-    </div>
-    <div class="bg-sf-min border border-brd px-4 py-3">
-      <div class="text-[10px] text-tx2 uppercase tracking-widest font-mono">Hot Opps (≥0.5%)</div>
-      <div id="statHot" class="font-mono text-xl text-pri-c mt-1">—</div>
-    </div>
-  </div>
+  <section class="grid g4 rise" style="--d:3">
+    <div class="card stat"><div class="cap">Pairs scanned</div><div class="v" id="stPairs">—</div></div>
+    <div class="card stat"><div class="cap">Best spread</div><div class="v m up" id="stBest">—</div></div>
+    <div class="card stat"><div class="cap">Avg spread</div><div class="v m" id="stAvg">—</div></div>
+    <div class="card stat"><div class="cap">Hot (≥0.5%)</div><div class="v" id="stHot">—</div></div>
+  </section>
 
-  <!-- Spread Table -->
-  <div class="bg-sf-min border border-brd flex flex-col">
-    <!-- Desktop header -->
-    <div class="hidden md:grid grid-cols-[180px_1fr_1fr_160px] items-center h-8 px-4 border-b border-brd bg-sf-ctr font-mono text-[10px] text-tx2 uppercase tracking-widest">
-      <div>Pair</div>
-      <div>Exchange A (High)</div>
-      <div>Exchange B (Low)</div>
-      <div class="text-right">Spread %</div>
-    </div>
-    <!-- Mobile header -->
-    <div class="md:hidden grid grid-cols-[1fr_80px_80px_70px] items-center h-8 px-4 border-b border-brd bg-sf-ctr font-mono text-[10px] text-tx2 uppercase">
-      <div>Pair</div><div class="text-right">High</div><div class="text-right">Low</div><div class="text-right">Sprd</div>
-    </div>
-
-    <!-- Loading state -->
-    <div id="loadingState" class="flex flex-col items-center justify-center py-16 gap-3">
-      <span class="material-symbols-outlined text-pri spin" style="font-size:32px">refresh</span>
-      <span class="font-mono text-xs text-tx2">Fetching data from exchanges...</span>
-    </div>
-
-    <!-- Error state -->
-    <div id="errorState" class="hidden flex flex-col items-center justify-center py-16 gap-3">
-      <span class="material-symbols-outlined text-red" style="font-size:32px">error</span>
-      <span class="font-mono text-xs text-red">Failed to connect to backend</span>
-      <span class="font-mono text-[10px] text-tx2">Make sure Flask server is running on port 5000</span>
-    </div>
-
-    <!-- Table body -->
-    <div id="tableBody"></div>
-
-    <!-- Footer -->
-    <div class="mt-auto h-8 border-t border-brd flex items-center justify-between px-4 font-mono text-[10px] text-tx2">
-      <span id="footerText">Sorted by spread % descending</span>
-      <span id="lastUpdate" class="text-tx2">—</span>
-    </div>
-  </div>
+  <section class="card flush tbl rise" style="--d:4;--cm:1.2fr 1fr 84px;--cd:1.1fr 1.4fr 1.4fr 110px">
+    <div class="thead"><div>Pair</div><div class="dm">Exchange A · High</div><div class="dm">Exchange B · Low</div><div class="mo r">Buy → Sell</div><div class="r">Spread</div></div>
+    <div id="body"></div>
+    <div class="foot" id="foot" style="padding:12px 0 14px;border-top:1px solid var(--line)">—</div>
+  </section>
 </main>
+</div>
 
-<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 bg-sf-ctr border-t border-brd">
-<a href="index.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">home</span><span class="text-[9px] mt-0.5 font-mono">Home</span></a>
-<a href="spread.html" class="flex flex-col items-center justify-center text-pri w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">swap_vert</span><span class="text-[9px] mt-0.5 font-mono">Spread</span></a>
-<a href="funding.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">schedule</span><span class="text-[9px] mt-0.5 font-mono">Funding</span></a>
-<a href="chart.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">monitoring</span><span class="text-[9px] mt-0.5 font-mono">Charts</span></a>
-<a href="converter.html" class="flex flex-col items-center justify-center text-tx2 w-full h-full"><span class="material-symbols-outlined" style="font-size:20px">currency_exchange</span><span class="text-[9px] mt-0.5 font-mono">Converter</span></a>
-</nav>
-
+<script src="autocomplete.js"></script>
+<script src="shared.js"></script>
 <script>
-const API = window.location.origin;
-let allData = [];
+(function(){
+  AX.init("spread");
+  document.querySelector("#refresh .rI").innerHTML = AX.icon("refresh");
+  var all = [], min = 0, first = true, ts = null;
+  var body = document.getElementById("body"), si = document.getElementById("navSearch");
+  body.innerHTML = AX.skel(8, 3);
+  AX.seg(document.getElementById("minSeg"), function(v){ min = parseFloat(v); first = true; render(); });
+  si.addEventListener("input", function(){ first = false; render(); });
 
-// ── Форматування чисел ──────────────────────────────────────────────────────
-function fmt(n) {
-  if (!n || n === 0) return "—";
-  if (n < 0.0001) return n.toFixed(8);
-  if (n < 0.01)   return n.toFixed(6);
-  if (n < 1)      return n.toFixed(4);
-  if (n < 100)    return n.toFixed(3);
-  return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
-}
-
-// ── Завантаження даних ──────────────────────────────────────────────────────
-async function loadSpread() {
-  const icon = document.getElementById("refreshIcon");
-  const dot  = document.getElementById("liveDot");
-  const label = document.getElementById("liveLabel");
-
-  icon.classList.add("spin");
-  dot.classList.remove("bg-grn");
-  dot.classList.add("bg-tx2");
-  label.textContent = "UPDATING...";
-  label.className = "text-tx2 font-mono";
-
-  try {
-    const res = await fetch(`${API}/api/spread`);
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const json = await res.json();
-
-    allData = json.data || [];
-
-    document.getElementById("loadingState").classList.add("hidden");
-    document.getElementById("errorState").classList.add("hidden");
-
-    renderTable();
-    updateStats();
-
-    const d = new Date(json.ts);
-    document.getElementById("lastUpdate").textContent = `Updated: ${d.toLocaleTimeString()}`;
-
-    dot.classList.remove("bg-tx2");
-    dot.classList.add("bg-grn");
-    label.textContent = "LIVE";
-    label.className = "text-grn font-mono";
-
-  } catch (e) {
-    console.error(e);
-    document.getElementById("loadingState").classList.add("hidden");
-    document.getElementById("errorState").classList.remove("hidden");
-    dot.classList.add("bg-red");
-    label.textContent = "ERROR";
-    label.className = "text-red font-mono";
+  function render(){
+    var q = si.value.trim().toLowerCase();
+    var f = all.filter(function(r){ return r.spread_pct >= min && (!q || r.symbol.toLowerCase().indexOf(q) > -1); });
+    if (!f.length){ body.innerHTML = AX.empty("empty", all.length ? "No pairs match the filter" : "No spread data"); document.getElementById("foot").textContent = "0 pairs shown"; return; }
+    body.innerHTML = f.map(function(s, i){
+      var b = AX.base(s.symbol);
+      return '<a class="trow' + (first && i < 14 ? " fresh" : "") + '" style="--d:' + i + '" href="token.html?symbol=' + encodeURIComponent(b) + '">' +
+        '<div class="sym"><span class="ico">' + AX.ico(b) + '</span><span><b>' + AX.esc(b) + (s.hot ? ' <span class="chip sm hot">HOT</span>' : "") + '</b><small class="mo">' + AX.esc(s.exchange_a) + " → " + AX.esc(s.exchange_b) + "</small></span></div>" +
+        '<div class="dm"><span class="ex"><span class="dot" style="background:' + AX.esc(s.color_a) + '"></span>' + AX.esc(s.exchange_a) + '</span><span class="num" style="margin-left:15px">' + AX.plain(s.price_a) + "</span></div>" +
+        '<div class="dm"><span class="ex"><span class="dot" style="background:' + AX.esc(s.color_b) + '"></span>' + AX.esc(s.exchange_b) + '</span><span class="num" style="margin-left:15px">' + AX.plain(s.price_b) + "</span></div>" +
+        '<div class="mo r mu" style="font-size:.75rem">' + AX.plain(s.price_a) + "<br>" + AX.plain(s.price_b) + "</div>" +
+        '<div class="r"><span class="chip ' + (s.hot ? "hot" : "up") + '">' + AX.pct(s.spread_pct, 3) + "</span></div></a>";
+    }).join("");
+    first = false;
+    document.getElementById("foot").textContent = f.length + " pairs shown · updated " + (ts ? ts.toLocaleTimeString() : "—");
   }
 
-  icon.classList.remove("spin");
-}
-
-// ── Рендер таблиці ──────────────────────────────────────────────────────────
-function renderTable() {
-  const minSpread = parseFloat(document.getElementById("minSpread").value);
-  const search = document.getElementById("searchInput")?.value.toLowerCase() || "";
-  const tbody = document.getElementById("tableBody");
-
-  const filtered = allData
-    .filter(r => r.spread_pct >= minSpread)
-    .filter(r => !search || r.symbol.toLowerCase().includes(search));
-
-  if (filtered.length === 0) {
-    tbody.innerHTML = `<div class="flex items-center justify-center py-12 font-mono text-xs text-tx2">No pairs match the filter</div>`;
-    return;
+  function load(manual){
+    var ic = document.querySelector("#refresh svg");
+    ic.classList.add("spin");
+    AX.get("/api/spread").then(function(j){
+      all = j.data || []; ts = new Date(j.ts);
+      var v = all.map(function(d){ return d.spread_pct; });
+      AX.count(document.getElementById("stPairs"), all.length, function(x){ return Math.round(x); });
+      if (v.length){
+        AX.count(document.getElementById("stBest"), v[0], function(x){ return AX.pct(x, 4); });
+        AX.count(document.getElementById("stAvg"), v.reduce(function(a, b){ return a + b; }, 0) / v.length, function(x){ return AX.pct(x, 4); });
+      }
+      AX.count(document.getElementById("stHot"), all.filter(function(d){ return d.spread_pct >= 0.5; }).length, function(x){ return Math.round(x); });
+      render();
+      AX.live(document.getElementById("live"), "ok", "LIVE");
+      if (manual) AX.toast("Spreads updated");
+    }).catch(function(){
+      AX.live(document.getElementById("live"), "err", "ERROR");
+      if (!all.length) body.innerHTML = AX.empty("alert", "Failed to connect to backend");
+      if (manual) AX.toast("Update failed", false);
+    }).then(function(){ ic.classList.remove("spin"); });
   }
-
-  tbody.innerHTML = filtered.map(s => {
-    const spClass = "text-grn font-semibold";
-    const bgClass = s.hot ? "bg-grn/5" : "";
-    const hotBadge = s.hot ? `<span class="ml-2 text-[9px] text-pri-c border border-pri-c/30 px-1">HOT</span>` : "";
-
-    return `
-    <div onclick="goToken('${s.symbol}')" class="border-b border-brd hover:bg-sf-hi transition-colors font-mono text-[13px] ${bgClass} row-flash cursor-pointer">
-      <!-- Desktop -->
-      <div class="hidden md:grid grid-cols-[180px_1fr_1fr_160px] items-center h-11 px-4">
-        <div class="font-semibold flex items-center gap-1">${s.symbol.replace("USDT","/USDT")}${hotBadge}</div>
-        <div>
-          <span class="inline-block w-2 h-2 rounded-sm mr-1" style="background:${s.color_a}"></span>
-          <span class="text-tx2 text-[11px]">${s.exchange_a}</span>
-          <span class="text-pri ml-2">${fmt(s.price_a)}</span>
-        </div>
-        <div>
-          <span class="inline-block w-2 h-2 rounded-sm mr-1" style="background:${s.color_b}"></span>
-          <span class="text-tx2 text-[11px]">${s.exchange_b}</span>
-          <span class="text-pri ml-2">${fmt(s.price_b)}</span>
-        </div>
-        <div class="text-right ${spClass}">+${s.spread_pct.toFixed(4)}%</div>
-      </div>
-      <!-- Mobile -->
-      <div class="md:hidden grid grid-cols-[1fr_80px_80px_70px] items-center h-12 px-4">
-        <div>
-          <div class="font-semibold text-xs">${s.symbol.replace("USDT","/USDT")}</div>
-          <div class="text-tx2 text-[10px]">${s.exchange_a} → ${s.exchange_b}</div>
-        </div>
-        <div class="text-right text-xs">${fmt(s.price_a)}</div>
-        <div class="text-right text-xs">${fmt(s.price_b)}</div>
-        <div class="text-right">
-          <span class="px-1.5 py-0.5 text-[11px] font-semibold bg-grn/10 text-grn">+${s.spread_pct.toFixed(3)}%</span>
-        </div>
-      </div>
-    </div>`;
-  }).join("");
-
-  document.getElementById("footerText").textContent =
-    `Sorted by spread % — ${filtered.length} pairs shown`;
-}
-
-// ── Статистика ──────────────────────────────────────────────────────────────
-function updateStats() {
-  if (!allData.length) return;
-  const values = allData.map(d => d.spread_pct);
-  const avg = values.reduce((a, b) => a + b, 0) / values.length;
-  const hot = allData.filter(d => d.spread_pct >= 0.5).length;
-
-  document.getElementById("statPairs").textContent = allData.length;
-  document.getElementById("statBest").textContent  = `+${values[0].toFixed(4)}%`;
-  document.getElementById("statAvg").textContent   = `+${avg.toFixed(4)}%`;
-  document.getElementById("statHot").textContent   = hot;
-}
-
-// ── Фільтр по символу ───────────────────────────────────────────────────────
-function filterRows() { renderTable(); }
-function goToken(sym) {
-  window.location.href = "token.html?symbol=" + sym.replace("USDT","").replace("/","").toUpperCase();
-}
-
-// ── Автооновлення кожні 15 секунд ──────────────────────────────────────────
-loadSpread();
-setInterval(loadSpread, 15000);
-// Nav autocomplete — переходить на сторінку токену
-const navInput = document.getElementById("searchInput");
-if (navInput) initAutocomplete(navInput, (sym, base) => {
-  window.location.href = "token.html?symbol=" + base;
-});
+  document.getElementById("refresh").addEventListener("click", function(){ load(true); });
+  load(); setInterval(load, 15000);
+})();
 </script>
 </body></html>

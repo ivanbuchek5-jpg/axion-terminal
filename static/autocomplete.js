@@ -1,5 +1,5 @@
 /**
- * CYPHER_TERMINAL — Universal Token Autocomplete
+ * AXION TERMINAL — Universal Token Autocomplete
  * Підключається на всіх сторінках. Ініціалізується через:
  *   initAutocomplete(inputEl, onSelect, options?)
  *
@@ -15,45 +15,51 @@ const STYLES = `
 .ct-dropdown {
   position: absolute;
   z-index: 9999;
-  background: #1d1f26;
-  border: 1px solid #3b4a44;
-  min-width: 260px;
-  max-height: 320px;
+  background: var(--surface, #171a13);
+  border: 1px solid var(--line, #2b3223);
+  border-radius: 20px;
+  padding: 6px;
+  min-width: 280px;
+  max-height: 340px;
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  box-shadow: var(--shadow, 0 10px 30px rgba(0,0,0,.35));
   scrollbar-width: none;
+  transform-origin: top center;
+  opacity: 1;
+  transform: none;
+  transition: opacity 160ms cubic-bezier(.23,1,.32,1), transform 200ms cubic-bezier(.23,1,.32,1);
 }
+@starting-style { .ct-dropdown { opacity: 0; transform: translateY(-6px) scale(.98); } }
 .ct-dropdown::-webkit-scrollbar { display: none; }
 .ct-dropdown-item {
   display: grid;
-  grid-template-columns: 1fr 1fr 80px;
+  grid-template-columns: 1fr auto 70px;
   align-items: center;
-  padding: 7px 12px;
+  padding: 9px 10px;
   cursor: pointer;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
-  border-bottom: 1px solid #282a30;
-  transition: background .1s;
-  gap: 8px;
+  border-radius: 14px;
+  transition: background-color .12s;
+  gap: 10px;
 }
-.ct-dropdown-item:last-child { border-bottom: none; }
 .ct-dropdown-item:hover,
-.ct-dropdown-item.selected {
-  background: #282a30;
-}
-.ct-dropdown-item .sym  { color: #e2e2ea; font-weight: 600; }
-.ct-dropdown-item .name { color: #bacac2; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ct-dropdown-item .prc  { text-align: right; color: #46f1c5; }
-.ct-dropdown-item .chg  { text-align: right; font-size: 11px; }
-.ct-dropdown-item .chg.up   { color: #4ae176; }
-.ct-dropdown-item .chg.down { color: #ffb4ab; }
+.ct-dropdown-item.selected { background: var(--surface2, #21261b); }
+.ct-dropdown-item.selected { box-shadow: inset 0 0 0 1px var(--accent-text, #c6ff00); }
+.ct-dropdown-item .sym  { color: var(--fg, #f3f6ea); font-weight: 700; font-family: 'Inter', sans-serif; font-size: 14px; display: block; }
+.ct-dropdown-item .name { color: var(--muted, #9aa38c); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-dropdown-item .prc  { text-align: right; color: var(--fg, #f3f6ea); font-weight: 600; }
+.ct-dropdown-item .chg  { text-align: right; font-size: 11px; font-weight: 600; }
+.ct-dropdown-item .chg.up   { color: var(--accent-text, #c6ff00); }
+.ct-dropdown-item .chg.down { color: var(--neg, #ff6b5e); }
 .ct-dropdown-empty {
-  padding: 14px 12px;
+  padding: 18px 12px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: #bacac2;
+  font-size: 12px;
+  color: var(--muted, #9aa38c);
   text-align: center;
 }
+@media (prefers-reduced-motion: reduce) { .ct-dropdown { transition: none; } }
 `;
 
 // Вставляємо стилі один раз
@@ -88,6 +94,7 @@ async function getSymbols() {
   return _cache;
 }
 
+function esc(x){return String(x==null?'':x).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 // Форматування ціни
 function fmtPrice(n) {
   if (!n) return '—';
@@ -124,7 +131,7 @@ window.initAutocomplete = function(inputEl, onSelect, opts = {}) {
     if (!results.length) {
       dropdown = document.createElement('div');
       dropdown.className = 'ct-dropdown';
-      dropdown.innerHTML = `<div class="ct-dropdown-empty">No results for "${inputEl.value}"</div>`;
+      dropdown.innerHTML = `<div class="ct-dropdown-empty">No results for "${esc(inputEl.value)}"</div>`;
       document.body.appendChild(dropdown);
       positionDropdown();
       return;
@@ -144,8 +151,8 @@ window.initAutocomplete = function(inputEl, onSelect, opts = {}) {
       item.dataset.idx = i;
       item.innerHTML = `
         <div>
-          <div class="sym">${s.base}<span style="color:#bacac2;font-weight:400">/USDT</span></div>
-          <div class="name">${name}</div>
+          <span class="sym">${s.base}</span>
+          <div class="name">${esc(name)}</div>
         </div>
         <div class="prc">$${fmtPrice(s.price)}</div>
         <div class="chg ${chgClass}">${sign}${s.change.toFixed(2)}%</div>
