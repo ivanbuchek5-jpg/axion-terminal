@@ -14,21 +14,21 @@
 
   /* ── theme ── */
   AX.theme = function () { return document.documentElement.getAttribute("data-theme") || "dark"; };
-  AX.setTheme = function (t) {
+  AX.setTheme = function (t, silent) {
     document.documentElement.setAttribute("data-theme", t);
     sset("axion-theme", t);
     var m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.setAttribute("content", t === "light" ? "#f5f8ec" : "#0f110d");
+    if (m) m.setAttribute("content", t === "light" ? "#E9EAEC" : "#25272D");
     var b = document.getElementById("themeBtn");
     if (b) { b.setAttribute("aria-label", t === "light" ? "Switch to dark mode" : "Switch to light mode"); b.setAttribute("aria-pressed", t === "dark" ? "true" : "false"); }
-    window.dispatchEvent(new CustomEvent("axion:theme", { detail: t }));
+    if (!silent) window.dispatchEvent(new CustomEvent("axion:theme", { detail: t }));
   };
   /* "Eclipse": the new theme grows from the toggle as a soft-edged circle (View Transitions API) */
   var vtBusy = false;
   AX.toggleTheme = function () {
     var root = document.documentElement, btn = document.getElementById("themeBtn");
     var next = AX.theme() === "light" ? "dark" : "light";
-    var apply = function () { AX.setTheme(next); };
+    var apply = function () { AX.setTheme(next, !!(document.startViewTransition && !reduce && btn)); };
     if (vtBusy) return;
     if (!document.startViewTransition || reduce || !btn) { apply(); return; }
     var r = btn.getBoundingClientRect(), W = innerWidth, H = innerHeight, x = r.left + r.width / 2, y = r.top + r.height / 2;
@@ -41,11 +41,11 @@
       var kf = [];
       for (var i = 0; i <= 48; i++) {
         var t = i / 48, e = t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-        kf.push({ "--l1": (e * (R + 64)) + "px", offset: t });
+        kf.push({ "--l1": (e * (R + 130)) + "px", offset: t });
       }
-      root.animate(kf, { duration: 1150, easing: "linear", fill: "both", pseudoElement: "::view-transition-new(root)" });
+      root.animate(kf, { duration: 1000, easing: "linear", fill: "both", pseudoElement: "::view-transition-new(root)" });
     });
-    var done = function () { root.classList.remove("vt-eclipse"); vtBusy = false; };
+    var done = function () { root.classList.remove("vt-eclipse"); vtBusy = false; window.dispatchEvent(new CustomEvent("axion:theme", { detail: AX.theme() })); };
     vt.finished.then(done, done);
   };
 
@@ -156,8 +156,7 @@
     var id = "sg" + Math.floor(Math.random() * 1e6);
     var col = up === false ? "var(--neg)" : "var(--accent)";
     return '<svg class="spark ' + (up === false ? "dn" : "") + '" viewBox="0 0 ' + w + " " + h + '" preserveAspectRatio="none">' +
-      '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + col + '" stop-opacity=".28"/><stop offset="1" stop-color="' + col + '" stop-opacity="0"/></linearGradient></defs>' +
-      '<path d="' + d + " L" + w + " " + h + " L0 " + h + 'Z" fill="url(#' + id + ')"/>' +
+      '<path d="' + d + " L" + w + " " + h + " L0 " + h + 'Z" fill="' + col + '" fill-opacity=".09"/>' +
       '<path class="ln" pathLength="1" d="' + d + '" vector-effect="non-scaling-stroke"/></svg>';
   };
 
@@ -425,11 +424,11 @@
       '<header class="nav" id="nav"><div class="nav-in">' +
       '<a class="brand" href="index.html" aria-label="AXION TERMINAL"><span class="logo"><img src="logo.png" alt=""></span>' +
       '<span class="brand-t"><b>AXION</b><i>TERMINAL</i></span></a>' +
-      '<nav class="nav-links" id="navLinks" aria-label="Main"><span class="nav-hv" id="navHv"></span><span class="nav-hl" id="navHl"></span>' +
+      '<nav class="nav-links" id="navLinks" aria-label="Main">' +
       NAV.map(function (n) { return '<a href="' + n[1] + '"' + (n[0] === page ? ' aria-current="page"' : "") + ">" + n[2] + "</a>"; }).join("") + "</nav>" +
-      '<div class="nav-r"><button type="button" class="theme-toggle" id="themeBtn" aria-pressed="true">' + AX.icon("moon", "icon-moon") + AX.icon("sun", "icon-sun") + "</button></div>" +
+      '<div class="nav-r"><button type="button" class="nav-search" id="navSearchBtn" aria-label="Search" aria-expanded="false">' + AX.icon("search") + '<span>Search</span></button><button type="button" class="theme-toggle" id="themeBtn" aria-pressed="true">' + AX.icon("moon", "icon-moon") + AX.icon("sun", "icon-sun") + "</button></div>" +
       "</div></header>" +
-      '<div class="top-search rise" style="--d:1"><label class="search">' + AX.icon("search") + '<input id="navSearch" placeholder="Search token — BTC, ETH, SOL…" autocomplete="off" spellcheck="false"></label></div>' +
+      '<div class="spal-s" id="spalS" hidden></div><div class="spal" id="spal" hidden><label class="search">' + AX.icon("search") + '<input id="navSearch" placeholder="Search token — BTC, ETH, SOL…" autocomplete="off" spellcheck="false"></label></div>' +
       (opts.ticker === false ? "" : '<div class="ticker rise" style="--d:2"><div class="tk-track" id="tkTrack"><div class="tk-load">Loading market data…</div></div></div>');
     while (top.lastChild) shell.insertBefore(top.lastChild, shell.firstChild);
 
@@ -439,45 +438,17 @@
     tb.setAttribute("aria-pressed", AX.theme() === "dark" ? "true" : "false");
     tb.addEventListener("click", AX.toggleTheme);
 
-    /* navbar: morph on scroll + pointer light + sliding highlights */
+    /* navbar: morph on scroll */
     var nav = document.getElementById("nav"), ticking = false;
     function onScroll() {
       if (ticking) return; ticking = true;
       requestAnimationFrame(function () {
         var y = window.scrollY || 0, c = nav.classList.contains("compact");
         if (!c && y > 56) nav.classList.add("compact"); else if (c && y < 18) nav.classList.remove("compact");
-        ticking = false; place();
+        ticking = false;
       });
     }
     window.addEventListener("scroll", onScroll, { passive: true });
-    var mp = false;
-    nav.addEventListener("pointermove", function (e) {
-      if (mp) return; mp = true;
-      requestAnimationFrame(function () {
-        var r = nav.getBoundingClientRect();
-        nav.style.setProperty("--mx", (e.clientX - r.left) + "px"); nav.style.setProperty("--my", (e.clientY - r.top) + "px"); mp = false;
-      });
-    });
-    var links = document.getElementById("navLinks"), hl = document.getElementById("navHl"), hv = document.getElementById("navHv");
-    var las = [].slice.call(links.querySelectorAll("a"));
-    function pos(el, a) { el.style.setProperty("--x", a.offsetLeft + "px"); el.style.setProperty("--w", a.offsetWidth + "px"); }
-    function place() { if (links.offsetParent) pos(hl, las[NI]); }
-    var pv = parseInt(ssget("axion-nav"), 10);
-    if (!isNaN(pv) && las[pv] && pv !== NI) { hl.style.transition = "none"; pos(hl, las[pv]); hl.offsetWidth; hl.style.transition = ""; }
-    requestAnimationFrame(function () { requestAnimationFrame(place); });
-    window.addEventListener("resize", place);
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { hl.style.transition = "none"; place(); hl.offsetWidth; hl.style.transition = ""; });
-    ssset("axion-nav", NI);
-    las.forEach(function (a) {
-      a.addEventListener("pointerenter", function () {
-        if (!hv.classList.contains("on")) { hv.classList.add("snap"); pos(hv, a); hv.offsetWidth; hv.classList.remove("snap"); }
-        pos(hv, a); hv.classList.add("on");
-      });
-      a.addEventListener("focus", function () { pos(hv, a); hv.classList.add("on"); });
-      a.addEventListener("blur", function () { hv.classList.remove("on"); });
-      a.addEventListener("click", function () { pos(hl, a); ssset("axion-nav", las.indexOf(a)); });
-    });
-    links.addEventListener("pointerleave", function () { hv.classList.remove("on"); });
     onScroll();
 
     /* dock */
@@ -503,11 +474,21 @@
       if (k > -1) { pill.style.setProperty("--i", k); ssset("axion-dock", k); }
     });
 
+    /* search palette in the navbar */
+    var sbtn = document.getElementById("navSearchBtn"), spal = document.getElementById("spal"), spS = document.getElementById("spalS");
+    function sOpen() { spal.hidden = false; spS.hidden = false; sbtn.setAttribute("aria-expanded", "true"); document.getElementById("navSearch").focus(); }
+    function sClose() { spal.hidden = true; spS.hidden = true; sbtn.setAttribute("aria-expanded", "false"); }
+    sbtn.addEventListener("click", function () { spal.hidden ? sOpen() : sClose(); });
+    spS.addEventListener("click", sClose);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !spal.hidden) sClose(); });
+    document.getElementById("navSearch").addEventListener("input", function () { sbtn.classList.toggle("has-q", !!this.value.trim()); });
+    AX.openSearch = sOpen;
+
     /* search autocomplete → token page */
     var si = document.getElementById("navSearch");
     if (window.initAutocomplete) window.initAutocomplete(si, function (sym, base) { AX.go(base); });
     document.addEventListener("keydown", function (e) {
-      if (e.key === "/" && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || "")) { e.preventDefault(); si.focus(); }
+      if (e.key === "/" && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || "")) { e.preventDefault(); sOpen(); }
     });
 
     if (opts.ticker !== false) AX.ticker();
@@ -565,7 +546,7 @@
   /* ── TradingView theme colors ── */
   AX.tvColors = function () {
     return AX.theme() === "light"
-      ? { theme: "light", bg: "#ffffff", grid: "#ebefdf" }
-      : { theme: "dark", bg: "#171a13", grid: "#21261b" };
+      ? { theme: "light", bg: "#FDFDFD", grid: "#ECEDEF" }
+      : { theme: "dark", bg: "#0E0F11", grid: "#1D1F24" };
   };
 })();
