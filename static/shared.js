@@ -118,7 +118,7 @@
   };
   AX.cls = function (n) { return Number(n) >= 0 ? "up" : "dn"; };
   AX.base = function (s) { return String(s || "").toUpperCase().replace("/", "").replace(/USDT$/, ""); };
-  AX.go = function (sym) { location.href = "token.html?symbol=" + encodeURIComponent(AX.base(sym)); };
+  AX.go = function (sym) { AX.navigate("token.html?symbol=" + encodeURIComponent(AX.base(sym))); };
   AX.ico = function (b) { return AX.esc(AX.base(b).slice(0, 3)); };
 
   /* ── count-up ── */
@@ -273,6 +273,57 @@
     return { close: close, el: sh, body: body };
   };
 
+
+  /* ── branded page transition ── */
+  var root = document.documentElement, leaving = false, target = null, leaveTimer = null;
+  AX.navigate = function (url) {
+    var abs;
+    try { abs = new URL(url, location.href); } catch (e) { location.href = url; return; }
+    if (reduce || abs.origin !== location.origin || (abs.pathname === location.pathname && abs.search === location.search)) { location.href = abs.href; return; }
+    target = abs.href;
+    if (leaving) return;                      /* rapid clicks: just retarget */
+    leaving = true;
+    root.classList.remove("pt-in", "pt-reveal");
+    root.classList.add("pt-out");
+    leaveTimer = setTimeout(function () {
+      try { sessionStorage.setItem("axion-pt", String(Date.now())); } catch (e) {}
+      location.assign(target);
+      /* navigation failed or was cancelled: restore the page */
+      setTimeout(function () { leaving = false; root.classList.remove("pt-out"); }, 6000);
+    }, 340);
+  };
+  document.addEventListener("click", function (e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var a = e.target.closest && e.target.closest("a[href]");
+    if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
+    var h = a.getAttribute("href");
+    if (!h || h.charAt(0) === "#" || /^(mailto:|tel:|javascript:)/i.test(h)) return;
+    e.preventDefault();
+    AX.navigate(a.href);
+  });
+  window.addEventListener("pageshow", function (e) {   /* back/forward cache */
+    leaving = false; clearTimeout(leaveTimer);
+    root.classList.remove("pt-out", "pt-in");
+  });
+  /* arrival: keep the branded screen until the page and its first data are ready */
+  if (root.classList.contains("pt-in")) {
+    var loaded = document.readyState === "complete", revealed = false, t0 = performance.now(), fontsOk = !(document.fonts && document.fonts.ready);
+    function reveal() {
+      if (revealed) return; revealed = true;
+      root.classList.add("pt-reveal");
+      root.classList.remove("pt-in");
+      setTimeout(function () { root.classList.remove("pt-reveal"); }, 900);
+    }
+    AX._ready = function () {
+      if (revealed || !loaded || !fontsOk || AX._pend > 0) return;
+      setTimeout(reveal, Math.max(0, 380 - (performance.now() - t0)));
+    };
+    if (!fontsOk) document.fonts.ready.then(function () { fontsOk = true; AX._ready(); });
+    if (!loaded) window.addEventListener("load", function () { loaded = true; AX._ready(); });
+    setTimeout(AX._ready, 120);
+    setTimeout(reveal, 2800);                          /* never stay stuck */
+  }
+
   /* ── chrome ── */
   var NAV = [
     ["home", "index.html", "Home"],
@@ -419,11 +470,14 @@
   };
 
   /* ── data helper with simple error surface ── */
+  AX._pend = 0;
   AX.get = function (path) {
+    AX._pend++;
+    function done() { AX._pend--; if (AX._ready) AX._ready(); }
     return fetch(API + path).then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
-    });
+    }).then(function (j) { done(); return j; }, function (e) { done(); throw e; });
   };
 
   /* ── TradingView theme colors ── */

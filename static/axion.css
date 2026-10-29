@@ -275,3 +275,33 @@ html.vt-eclipse::view-transition-new(root){mask-image:radial-gradient(circle at 
   *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
   .tk-track{animation:none}
 }
+
+/* ── branded page transition (Axion overlay) ── */
+#pt{position:fixed;inset:0;z-index:200;display:grid;place-items:center;overflow:hidden;pointer-events:none;visibility:hidden;opacity:0;
+  background:#070906;color:#f3f6ea;transition:opacity 340ms var(--ease-out),visibility 0s linear 340ms}
+html.pt-out #pt,html.pt-in #pt{visibility:visible;opacity:1;pointer-events:auto;transition:opacity 260ms var(--ease-out),visibility 0s}
+.pt-glow{position:absolute;inset:-20%;background:radial-gradient(38% 38% at 50% 48%,rgba(182,255,0,.17),transparent 70%),radial-gradient(60% 40% at 50% 100%,rgba(182,255,0,.07),transparent 70%);animation:ptBreath 2.6s ease-in-out infinite}
+@keyframes ptBreath{50%{transform:scale(1.08);opacity:.8}}
+.pt-core{position:relative;display:flex;flex-direction:column;align-items:center;gap:22px}
+.pt-logo{width:92px;height:92px;border-radius:28px;background:#0d1100;display:grid;place-items:center;box-shadow:0 0 0 1px rgba(182,255,0,.22),0 0 60px rgba(182,255,0,.22),0 18px 50px rgba(0,0,0,.6)}
+.pt-logo img{width:68%;height:68%;object-fit:contain;mix-blend-mode:screen}
+.pt-word{font:700 1.0625rem var(--sans);letter-spacing:.34em;padding-left:.34em;white-space:nowrap}
+.pt-word b{color:#B6FF00;font-weight:600}
+.pt-bar{position:absolute;left:50%;bottom:11vh;width:120px;height:2px;margin-left:-60px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden}
+.pt-bar i{display:block;height:100%;width:45%;border-radius:2px;background:#B6FF00;box-shadow:0 0 12px #B6FF00;animation:ptBar 1.1s var(--ease-in-out) infinite}
+@keyframes ptBar{from{transform:translateX(-110%)}to{transform:translateX(250%)}}
+html.pt-out .pt-logo{animation:ptLogo 520ms var(--ease-out) both}
+html.pt-out .pt-word{animation:ptWord 560ms var(--ease-out) 70ms both}
+@keyframes ptLogo{from{opacity:0;transform:scale(.82);filter:blur(12px)}to{opacity:1;transform:none;filter:blur(0)}}
+@keyframes ptWord{from{opacity:0;transform:translateY(10px);letter-spacing:.6em;filter:blur(6px)}to{opacity:1;transform:none;letter-spacing:.34em;filter:blur(0)}}
+/* page leaves: fade + scale + blur */
+html.pt-out .rise,html.pt-out .nav{animation:none}
+html.pt-out main{opacity:0;transform:scale(.985);filter:blur(6px);transition:opacity 280ms var(--ease-out),transform 340ms var(--ease-in-out),filter 280ms var(--ease-out)}
+html.pt-out .ticker,html.pt-out .top-search{opacity:0;transition:opacity 220ms var(--ease-out)}
+/* page arrives: entrance animations wait until the overlay lifts */
+html.pt-in .rise,html.pt-in .nav{animation-play-state:paused}
+html.pt-in main{opacity:0}
+main{transition:opacity 0s}
+html.pt-reveal main{animation:ptIn 560ms var(--ease-out) both}
+@keyframes ptIn{from{opacity:0;transform:scale(1.012);filter:blur(8px)}to{opacity:1;transform:none;filter:blur(0)}}
+@media(prefers-reduced-motion:reduce){#pt{display:none}html.pt-out main{opacity:1;transform:none;filter:none}}
