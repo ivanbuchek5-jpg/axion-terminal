@@ -305,3 +305,21 @@ main{transition:opacity 0s}
 html.pt-reveal main{animation:ptIn 560ms var(--ease-out) both}
 @keyframes ptIn{from{opacity:0;transform:scale(1.012);filter:blur(8px)}to{opacity:1;transform:none;filter:blur(0)}}
 @media(prefers-reduced-motion:reduce){#pt{display:none}html.pt-out main{opacity:1;transform:none;filter:none}}
+
+/* ── custom minimalist scrollbar ── */
+:root{--sb-track:rgba(255,255,255,.1);--sb-thumb:#B6FF00;--sb-glow:rgba(182,255,0,.35)}
+:root[data-theme="light"]{--sb-track:rgba(20,26,11,.12);--sb-thumb:#0d1100;--sb-glow:rgba(0,0,0,0)}
+html.has-sb{scrollbar-width:none;-ms-overflow-style:none}
+html.has-sb::-webkit-scrollbar{display:none;width:0;height:0}
+.sb{position:fixed;top:50%;right:calc(5px + env(safe-area-inset-right));z-index:70;width:22px;height:var(--sb-h,240px);margin-top:calc(var(--sb-h,240px)/-2);
+  display:flex;justify-content:flex-end;cursor:pointer;touch-action:none;opacity:0;pointer-events:none;transition:opacity 260ms var(--ease-out)}
+.sb.on{opacity:.6;pointer-events:auto}
+.sb.on.act,.sb.on:hover,.sb.on.drag{opacity:1}
+.sb-track{position:relative;width:4px;height:100%;border-radius:4px;background:var(--sb-track);transform-origin:100% 50%;transition:transform 220ms var(--ease-out)}
+.sb-thumb{position:absolute;left:0;right:0;top:0;border-radius:4px;background:var(--sb-thumb);box-shadow:0 0 10px var(--sb-glow);will-change:transform;transition:box-shadow 200ms}
+.sb.drag .sb-thumb{box-shadow:0 0 16px var(--sb-glow)}
+.sb.drag{cursor:grabbing}
+@media(hover:hover) and (pointer:fine){.sb:hover .sb-track,.sb.drag .sb-track{transform:scaleX(1.9)}}
+@media(pointer:coarse){.sb.on{opacity:0}.sb.on.act,.sb.on.drag{opacity:1}.sb{width:18px}}
+html.pt-out .sb,html.pt-in .sb{opacity:0!important}
+@media(prefers-reduced-motion:reduce){.sb,.sb-track{transition:none}}
