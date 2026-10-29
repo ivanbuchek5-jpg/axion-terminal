@@ -31,8 +31,11 @@
     var next = (want || AX.theme()) === "light" ? "dark" : "light";
     want = next;
     var fast = !document.startViewTransition || reduce || !btn;
-    if (vtCur) { try { vtCur.skipTransition(); } catch (e) {} vtCur = null; }
-    if (fast) { AX.setTheme(next); want = null; return; }
+    if (vtCur || fast) {
+      /* interrupted (or no VT support): flip instantly, never wait for the running animation */
+      if (vtCur) { vtId++; try { vtCur.skipTransition(); } catch (e) {} vtCur = null; root.classList.remove("vt-eclipse"); }
+      AX.setTheme(next); want = null; return;
+    }
     var apply = function () { AX.setTheme(next, true); };
     var r = btn.getBoundingClientRect(), W = innerWidth, H = innerHeight, x = r.left + r.width / 2, y = r.top + r.height / 2;
     var R = Math.hypot(Math.max(x, W - x), Math.max(y, H - y));
@@ -66,8 +69,8 @@
     funding: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
     converter: '<path d="M4 8h14l-3-3M20 16H6l3 3"/>',
     chart: '<path d="M4 19V5"/><path d="M4 19h16"/><path d="m7.5 14 3.5-4 3 2.5 4.5-6"/>',
-    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>',
-    moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+    moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
     search: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
     back: '<path d="M15 5 8 12l7 7"/>',
     refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/>',

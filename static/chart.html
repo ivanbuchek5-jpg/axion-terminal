@@ -58,7 +58,8 @@
       timezone: "Etc/UTC", theme: c.theme, style: "1", locale: "en",
       toolbar_bg: c.bg, backgroundColor: c.bg, gridColor: c.grid,
       enable_publishing: false, hide_top_toolbar: true, hide_legend: false, save_image: false,
-      container_id: "tv-chart", studies: ["MASimple@tv-basicstudies"]
+      container_id: "tv-chart", studies: ["MASimple@tv-basicstudies"],
+      overrides: { "mainSeriesProperties.priceAxisProperties.percentage": false, "mainSeriesProperties.priceAxisProperties.log": false, "mainSeriesProperties.priceAxisProperties.indexedTo100": false }
     });
   }
   AX.seg(document.getElementById("tfSeg"), function(v){ tf = v; create(); });

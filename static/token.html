@@ -79,13 +79,15 @@
   function lay(){ document.getElementById("lay").style.gridTemplateColumns = mq.matches ? "minmax(0,1fr) 380px" : "minmax(0,1fr)"; }
   lay(); (mq.addEventListener ? mq.addEventListener("change", lay) : mq.addListener(lay));
 
+  var tvEx = "BINANCE", TVX = { binance: "BINANCE", okx: "OKX", mexc: "MEXC", gate: "GATEIO", bingx: "BINGX" };
   function chart(){
     var el = document.getElementById("tv-chart"); el.innerHTML = "";
     if (!window.TradingView){ el.innerHTML = AX.empty("alert", "TradingView failed to load"); return; }
     var c = AX.tvColors();
-    new TradingView.widget({ autosize: true, symbol: "BINANCE:" + symbol, interval: tf, timezone: "Etc/UTC", theme: c.theme, style: "1", locale: "en",
+    new TradingView.widget({ autosize: true, symbol: tvEx + ":" + symbol, interval: tf, timezone: "Etc/UTC", theme: c.theme, style: "1", locale: "en",
       toolbar_bg: c.bg, backgroundColor: c.bg, gridColor: c.grid, enable_publishing: false, hide_top_toolbar: true, hide_legend: false, save_image: false,
-      container_id: "tv-chart", studies: ["MASimple@tv-basicstudies"] });
+      container_id: "tv-chart", studies: ["MASimple@tv-basicstudies"],
+      overrides: { "mainSeriesProperties.priceAxisProperties.percentage": false, "mainSeriesProperties.priceAxisProperties.log": false, "mainSeriesProperties.priceAxisProperties.indexedTo100": false } });
   }
   AX.seg(document.getElementById("tfSeg"), function(v){ tf = v; chart(); });
   window.addEventListener("axion:theme", chart);
@@ -96,6 +98,8 @@
     AX.get("/api/prices?symbol=" + symbol).then(function(j){
       var data = j.data || [];
       if (!data.length){ AX.live(document.getElementById("live"), "err", "NO DATA"); return; }
+      var pick = ["binance", "okx", "mexc", "gate", "bingx"].filter(function(k){ return data.some(function(d){ return String(d.exchange).toLowerCase() === k; }); })[0];
+      if (pick && TVX[pick] !== tvEx){ tvEx = TVX[pick]; chart(); }
       var ref = data.filter(function(d){ return d.exchange === "binance" || d.exchange === "Binance"; })[0] || data[0];
       (pFirst ? AX.countIn : AX.count)(document.getElementById("tokenPrice"), ref.price, function(v){ return AX.price(v); });
       var c = document.getElementById("tokenChange");
