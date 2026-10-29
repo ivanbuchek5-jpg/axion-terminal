@@ -276,11 +276,27 @@
 
   /* ── branded page transition ── */
   var root = document.documentElement, leaving = false, target = null, leaveTimer = null;
+  var warmed = {};
+  AX.warm = function (href) {
+    try {
+      var u = new URL(href, location.href);
+      if (u.origin !== location.origin || warmed[u.href] || u.href === location.href) return;
+      warmed[u.href] = 1;
+      fetch(u.href, { credentials: "same-origin" }).catch(function () {});
+    } catch (e) {}
+  };
+  ["pointerover", "touchstart"].forEach(function (ev) {
+    document.addEventListener(ev, function (e) {
+      var a = e.target.closest && e.target.closest("a[href]");
+      if (a && !a.target && a.getAttribute("href").charAt(0) !== "#") AX.warm(a.href);
+    }, { passive: true });
+  });
   AX.navigate = function (url) {
     var abs;
     try { abs = new URL(url, location.href); } catch (e) { location.href = url; return; }
     if (reduce || abs.origin !== location.origin || (abs.pathname === location.pathname && abs.search === location.search)) { location.href = abs.href; return; }
     target = abs.href;
+    AX.warm(target);
     if (leaving) return;                      /* rapid clicks: just retarget */
     leaving = true;
     root.classList.remove("pt-in", "pt-reveal");

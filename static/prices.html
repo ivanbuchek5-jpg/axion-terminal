@@ -6,10 +6,12 @@
 <title>AXION TERMINAL — Prices</title>
 <link rel="icon" type="image/png" href="logo.png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'"/><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet"/></noscript>
 <script>(function(){var t=null;try{t=localStorage.getItem('axion-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#f5f8ec':'#0f110d')})()</script>
 <script>(function(){var d=document.documentElement;try{var t=+sessionStorage.getItem('axion-pt');sessionStorage.removeItem('axion-pt');if(t&&Date.now()-t<10000&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){d.classList.add('pt-in');setTimeout(function(){d.classList.remove('pt-in')},4500)}}catch(e){}})()</script>
-<link rel="stylesheet" href="axion.css"/>
+<style>html{background:#0f110d}html[data-theme=light]{background:#f5f8ec}html.pt-in{background:#070906}html:not(.css) body{visibility:hidden}</style>
+<link rel="stylesheet" href="axion.css?v=5" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
+<script>setTimeout(function(){document.documentElement.classList.add("css")},3000)</script>
 </head>
 <body>
 <div id="pt" aria-hidden="true"><div class="pt-glow"></div><div class="pt-core"><div class="pt-logo"><img src="logo.png" alt=""></div><div class="pt-word">AXION <b>TERMINAL</b></div></div><div class="pt-bar"><i></i></div></div>
@@ -58,8 +60,8 @@
 </main>
 </div>
 
-<script src="autocomplete.js"></script>
-<script src="shared.js"></script>
+<script src="autocomplete.js?v=5"></script>
+<script src="shared.js?v=5"></script>
 <script>
 (function(){
   AX.init("prices");
