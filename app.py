@@ -25,7 +25,7 @@ def _optimize(resp):
             if request.args.get("v"):
                 resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
             elif p.endswith((".png", ".ico", ".jpg", ".svg")):
-                resp.headers["Cache-Control"] = "public, max-age=86400"
+                resp.headers["Cache-Control"] = "no-cache"  # revalidate (ETag/304): a replaced logo shows up immediately
             else:
                 resp.headers["Cache-Control"] = "public, max-age=60"
         ctype = resp.headers.get("Content-Type", "")
