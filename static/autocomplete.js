@@ -15,8 +15,8 @@ const STYLES = `
 .ct-dropdown {
   position: absolute;
   z-index: 9999;
-  background: var(--surface, #171a13);
-  border: 1px solid var(--line, #2b3223);
+  background: var(--surface, #0E0F11);
+  border: 1px solid var(--line, #34373E);
   border-radius: 20px;
   padding: 6px;
   min-width: 280px;
@@ -44,19 +44,19 @@ const STYLES = `
   gap: 10px;
 }
 .ct-dropdown-item:hover,
-.ct-dropdown-item.selected { background: var(--surface2, #21261b); }
-.ct-dropdown-item.selected { box-shadow: inset 0 0 0 1px var(--accent-text, #c6ff00); }
-.ct-dropdown-item .sym  { color: var(--fg, #f3f6ea); font-weight: 700; font-family: 'Inter', sans-serif; font-size: 14px; display: block; }
-.ct-dropdown-item .name { color: var(--muted, #9aa38c); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ct-dropdown-item .prc  { text-align: right; color: var(--fg, #f3f6ea); font-weight: 600; }
+.ct-dropdown-item.selected { background: var(--surface2, #1A1C20); }
+.ct-dropdown-item.selected { box-shadow: inset 0 0 0 1px var(--accent-text, #00FF48); }
+.ct-dropdown-item .sym  { color: var(--fg, #FDFDFD); font-weight: 700; font-family: 'Inter', sans-serif; font-size: 14px; display: block; }
+.ct-dropdown-item .name { color: var(--muted, #9A9DA6); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-dropdown-item .prc  { text-align: right; color: var(--fg, #FDFDFD); font-weight: 600; }
 .ct-dropdown-item .chg  { text-align: right; font-size: 11px; font-weight: 600; }
-.ct-dropdown-item .chg.up   { color: var(--accent-text, #c6ff00); }
-.ct-dropdown-item .chg.down { color: var(--neg, #ff6b5e); }
+.ct-dropdown-item .chg.up   { color: var(--accent-text, #00FF48); }
+.ct-dropdown-item .chg.down { color: var(--neg, #FF5A52); }
 .ct-dropdown-empty {
   padding: 18px 12px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
-  color: var(--muted, #9aa38c);
+  color: var(--muted, #9A9DA6);
   text-align: center;
 }
 @media (prefers-reduced-motion: reduce) { .ct-dropdown { transition: none; } }
