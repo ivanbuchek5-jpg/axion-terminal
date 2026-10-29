@@ -118,7 +118,7 @@
   };
   AX.cls = function (n) { return Number(n) >= 0 ? "up" : "dn"; };
   AX.base = function (s) { return String(s || "").toUpperCase().replace("/", "").replace(/USDT$/, ""); };
-  AX.go = function (sym) { location.href = "token.html?symbol=" + encodeURIComponent(AX.base(sym)); };
+  AX.go = function (sym) { AX.navigate("token.html?symbol=" + encodeURIComponent(AX.base(sym))); };
   AX.ico = function (b) { return AX.esc(AX.base(b).slice(0, 3)); };
 
   /* ── count-up ── */
@@ -273,6 +273,122 @@
     return { close: close, el: sh, body: body };
   };
 
+
+  /* ── branded page transition ── */
+  var root = document.documentElement, leaving = false, target = null, leaveTimer = null;
+  AX.navigate = function (url) {
+    var abs;
+    try { abs = new URL(url, location.href); } catch (e) { location.href = url; return; }
+    if (reduce || abs.origin !== location.origin || (abs.pathname === location.pathname && abs.search === location.search)) { location.href = abs.href; return; }
+    target = abs.href;
+    if (leaving) return;                      /* rapid clicks: just retarget */
+    leaving = true;
+    root.classList.remove("pt-in", "pt-reveal");
+    root.classList.add("pt-out");
+    leaveTimer = setTimeout(function () {
+      try { sessionStorage.setItem("axion-pt", String(Date.now())); } catch (e) {}
+      location.assign(target);
+      /* navigation failed or was cancelled: restore the page */
+      setTimeout(function () { leaving = false; root.classList.remove("pt-out"); }, 6000);
+    }, 340);
+  };
+  document.addEventListener("click", function (e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var a = e.target.closest && e.target.closest("a[href]");
+    if (!a || a.target === "_blank" || a.hasAttribute("download")) return;
+    var h = a.getAttribute("href");
+    if (!h || h.charAt(0) === "#" || /^(mailto:|tel:|javascript:)/i.test(h)) return;
+    e.preventDefault();
+    AX.navigate(a.href);
+  });
+  window.addEventListener("pageshow", function (e) {   /* back/forward cache */
+    leaving = false; clearTimeout(leaveTimer);
+    root.classList.remove("pt-out", "pt-in");
+  });
+  /* arrival: keep the branded screen until the page and its first data are ready */
+  if (root.classList.contains("pt-in")) {
+    var loaded = document.readyState === "complete", revealed = false, t0 = performance.now(), fontsOk = !(document.fonts && document.fonts.ready);
+    function reveal() {
+      if (revealed) return; revealed = true;
+      root.classList.add("pt-reveal");
+      root.classList.remove("pt-in");
+      setTimeout(function () { root.classList.remove("pt-reveal"); }, 900);
+    }
+    AX._ready = function () {
+      if (revealed || !loaded || !fontsOk || AX._pend > 0) return;
+      setTimeout(reveal, Math.max(0, 380 - (performance.now() - t0)));
+    };
+    if (!fontsOk) document.fonts.ready.then(function () { fontsOk = true; AX._ready(); });
+    if (!loaded) window.addEventListener("load", function () { loaded = true; AX._ready(); });
+    setTimeout(AX._ready, 120);
+    setTimeout(reveal, 2800);                          /* never stay stuck */
+  }
+
+
+  /* ── custom scrollbar ── */
+  AX.scrollbar = function () {
+    if (AX._sb) return; AX._sb = true;
+    var root = document.documentElement;
+    var sb = document.createElement("div");
+    sb.className = "sb"; sb.setAttribute("aria-hidden", "true");
+    sb.innerHTML = '<div class="sb-track"><div class="sb-thumb"></div></div>';
+    document.body.appendChild(sb);
+    var thumb = sb.querySelector(".sb-thumb");
+    root.classList.add("has-sb");
+    var trackH = 240, thumbH = 40, maxScroll = 0, cur = 0, tgt = 0, raf = 0, dragging = false, grab = 0, idle = 0;
+    function metrics() {
+      var vh = window.innerHeight, dh = Math.max(root.scrollHeight, document.body.scrollHeight);
+      maxScroll = Math.max(0, dh - vh);
+      trackH = Math.round(Math.min(300, Math.max(150, vh * 0.36)));
+      thumbH = Math.round(Math.min(trackH * 0.3, Math.max(28, trackH * vh / Math.max(dh, 1))));
+      sb.style.setProperty("--sb-h", trackH + "px");
+      thumb.style.height = thumbH + "px";
+      sb.classList.toggle("on", maxScroll > 2);
+      target();
+    }
+    function target() {
+      var r = maxScroll ? Math.min(1, Math.max(0, (window.scrollY || root.scrollTop) / maxScroll)) : 0;
+      tgt = r * (trackH - thumbH);
+      if (!raf) raf = requestAnimationFrame(tick);
+    }
+    function tick() {
+      raf = 0;
+      var d = tgt - cur;
+      cur = dragging || reduce || Math.abs(d) < 0.15 ? tgt : cur + d * 0.22;
+      thumb.style.transform = "translate3d(0," + cur.toFixed(2) + "px,0)";
+      if (cur !== tgt) raf = requestAnimationFrame(tick);
+    }
+    function wake() { sb.classList.add("act"); clearTimeout(idle); idle = setTimeout(function () { sb.classList.remove("act"); }, 900); }
+    window.addEventListener("scroll", function () { target(); wake(); }, { passive: true });
+    window.addEventListener("resize", metrics);
+    window.addEventListener("load", metrics);
+    if (window.ResizeObserver) { var ro = new ResizeObserver(metrics); ro.observe(document.body); ro.observe(root); }
+    else setInterval(metrics, 1000);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(metrics);
+    window.addEventListener("pageshow", metrics);
+
+    function ratioFrom(y, off) {
+      var r = sb.getBoundingClientRect(), top = r.top;
+      return Math.min(1, Math.max(0, (y - top - off) / Math.max(1, trackH - thumbH)));
+    }
+    sb.addEventListener("pointerdown", function (e) {
+      if (e.button) return;
+      e.preventDefault();
+      var tr = thumb.getBoundingClientRect();
+      if (e.clientY >= tr.top && e.clientY <= tr.bottom) grab = e.clientY - tr.top;
+      else { grab = thumbH / 2; window.scrollTo({ top: ratioFrom(e.clientY, grab) * maxScroll, behavior: reduce ? "auto" : "smooth" }); }
+      dragging = true; sb.classList.add("drag"); sb.setPointerCapture(e.pointerId);
+      document.body.style.userSelect = "none";
+    });
+    sb.addEventListener("pointermove", function (e) {
+      if (!dragging) return;
+      window.scrollTo(0, ratioFrom(e.clientY, grab) * maxScroll);
+    });
+    function end() { if (!dragging) return; dragging = false; sb.classList.remove("drag"); document.body.style.userSelect = ""; target(); }
+    sb.addEventListener("pointerup", end); sb.addEventListener("pointercancel", end);
+    metrics(); wake();
+  };
+
   /* ── chrome ── */
   var NAV = [
     ["home", "index.html", "Home"],
@@ -379,6 +495,7 @@
     });
 
     if (opts.ticker !== false) AX.ticker();
+    AX.scrollbar();
     document.documentElement.classList.add("ready");
   };
 
@@ -419,11 +536,14 @@
   };
 
   /* ── data helper with simple error surface ── */
+  AX._pend = 0;
   AX.get = function (path) {
+    AX._pend++;
+    function done() { AX._pend--; if (AX._ready) AX._ready(); }
     return fetch(API + path).then(function (r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
-    });
+    }).then(function (j) { done(); return j; }, function (e) { done(); throw e; });
   };
 
   /* ── TradingView theme colors ── */
