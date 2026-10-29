@@ -23,29 +23,38 @@
     if (b) { b.setAttribute("aria-label", t === "light" ? "Switch to dark mode" : "Switch to light mode"); b.setAttribute("aria-pressed", t === "dark" ? "true" : "false"); }
     if (!silent) window.dispatchEvent(new CustomEvent("axion:theme", { detail: t }));
   };
-  /* "Eclipse": the new theme grows from the toggle as a soft-edged circle (View Transitions API) */
-  var vtBusy = false;
+  /* "Eclipse": the new theme grows from the toggle as a soft-edged circle (View Transitions API).
+     Never locked: a click during a running transition skips it and starts the next one at once. */
+  var vtCur = null, vtId = 0, want = null;
   AX.toggleTheme = function () {
     var root = document.documentElement, btn = document.getElementById("themeBtn");
-    var next = AX.theme() === "light" ? "dark" : "light";
-    var apply = function () { AX.setTheme(next, !!(document.startViewTransition && !reduce && btn)); };
-    if (vtBusy) return;
-    if (!document.startViewTransition || reduce || !btn) { apply(); return; }
+    var next = (want || AX.theme()) === "light" ? "dark" : "light";
+    want = next;
+    var fast = !document.startViewTransition || reduce || !btn;
+    if (vtCur) { try { vtCur.skipTransition(); } catch (e) {} vtCur = null; }
+    if (fast) { AX.setTheme(next); want = null; return; }
+    var apply = function () { AX.setTheme(next, true); };
     var r = btn.getBoundingClientRect(), W = innerWidth, H = innerHeight, x = r.left + r.width / 2, y = r.top + r.height / 2;
     var R = Math.hypot(Math.max(x, W - x), Math.max(y, H - y));
     root.style.setProperty("--vt-x", x + "px"); root.style.setProperty("--vt-y", y + "px");
     root.classList.add("vt-eclipse");
-    vtBusy = true;
-    var vt = document.startViewTransition(apply);
+    var id = ++vtId, vt = document.startViewTransition(apply);
+    vtCur = vt;
     vt.ready.then(function () {
+      if (id !== vtId) return;
       var kf = [];
       for (var i = 0; i <= 48; i++) {
-        var t = i / 48, e = t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        var t = i / 48, e = 1 - Math.pow(1 - t, 3);
         kf.push({ "--l1": (e * (R + 130)) + "px", offset: t });
       }
-      root.animate(kf, { duration: 1000, easing: "linear", fill: "both", pseudoElement: "::view-transition-new(root)" });
-    });
-    var done = function () { root.classList.remove("vt-eclipse"); vtBusy = false; window.dispatchEvent(new CustomEvent("axion:theme", { detail: AX.theme() })); };
+      root.animate(kf, { duration: 780, easing: "linear", fill: "both", pseudoElement: "::view-transition-new(root)" });
+    }, function () {});
+    var done = function () {
+      if (id !== vtId) return;
+      vtCur = null; want = null;
+      root.classList.remove("vt-eclipse");
+      window.dispatchEvent(new CustomEvent("axion:theme", { detail: AX.theme() }));
+    };
     vt.finished.then(done, done);
   };
 

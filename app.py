@@ -50,9 +50,19 @@ TIMEOUT = 5
 # ─── Публічні API ендпоінти бірж ──────────────────────────────────────────────
 EXCHANGE_APIS = {
     "binance": {
-        "spot":    "https://api.binance.com/api/v3/ticker/24hr",  # може бути заблокований на cloud
-        "funding": "https://fapi.binance.com/fapi/v1/premiumIndex",
+        # data-api.binance.vision — публічне дзеркало ринкових даних, не блокується на cloud (api.binance.com дає 451)
+        "spot":    ["https://data-api.binance.vision/api/v3/ticker/24hr", "https://api.binance.com/api/v3/ticker/24hr"],
+        "funding": ["https://fapi.binance.com/fapi/v1/premiumIndex"],
         "color":   "#F0B90B",
+    },
+    "aster": {
+        "spot":    ["https://sapi.asterdex.com/api/v3/ticker/24hr"],
+        "funding": ["https://fapi.asterdex.com/fapi/v1/premiumIndex"],
+        "color":   "#E6A23C",
+    },
+    "okx": {
+        "spot":    ["https://www.okx.com/api/v5/market/tickers?instType=SPOT"],
+        "color":   "#B8BCC4",
     },
     "bybit": {
         "spot":    "https://api.bybit.com/v5/market/tickers?category=spot",
@@ -70,6 +80,7 @@ EXCHANGE_APIS = {
     },
     "bingx": {
         "spot":    "https://open-api.bingx.com/openApi/spot/v1/ticker/24hr",
+        "funding": "https://open-api.bingx.com/openApi/swap/v2/quote/premiumIndex",
         "color":   "#6C5CE7",
     },
 }
@@ -77,14 +88,20 @@ EXCHANGE_APIS = {
 # ─── Хелпери ──────────────────────────────────────────────────────────────────
 
 def safe_get(url, params=None):
-    """Безпечний GET запит з таймаутом."""
-    try:
-        r = requests.get(url, params=params, timeout=TIMEOUT)
-        r.raise_for_status()
-        return r.json()
-    except Exception as e:
-        print(f"[ERR] {url}: {e}")
-        return None
+    """Безпечний GET запит з таймаутом. `url` може бути списком дзеркал — пробуємо по черзі."""
+    urls = list(url) if isinstance(url, (list, tuple)) else [url]
+    for u in urls:
+        try:
+            r = requests.get(u, params=params, timeout=TIMEOUT, headers={"User-Agent": "Mozilla/5.0 AxionTerminal"})
+            r.raise_for_status()
+            return r.json()
+        except Exception as e:
+            print(f"[ERR] {u}: {e}")
+    return None
+
+
+def _ts():
+    return int(time.time() * 1000)
 
 
 def fetch_all_parallel(tasks: dict) -> dict:
@@ -94,7 +111,7 @@ def fetch_all_parallel(tasks: dict) -> dict:
     Повертає {"key": parsed_json, ...}
     """
     results = {}
-    with ThreadPoolExecutor(max_workers=8) as ex:
+    with ThreadPoolExecutor(max_workers=16) as ex:
         futures = {ex.submit(safe_get, url, params): key
                    for key, (url, params) in tasks.items()}
         for fut in as_completed(futures):
@@ -225,7 +242,48 @@ def parse_bingx_spot(data, symbol=None):
     return out
 
 
+def parse_okx_spot(data, symbol=None):
+    """OKX v5 tickers: {"data":[{instId:"BTC-USDT", last, open24h, volCcy24h, bidPx, askPx, high24h, low24h}]}"""
+    if not data or not isinstance(data, dict):
+        return []
+    out = []
+    for d in (data.get("data") or []):
+        inst = d.get("instId", "")
+        if not inst.endswith("-USDT"):
+            continue
+        s = inst.replace("-", "")
+        if symbol and s != symbol:
+            continue
+        try:
+            last = float(d.get("last") or 0)
+            op = float(d.get("open24h") or 0)
+            out.append({
+                "symbol":    s,
+                "price":     last,
+                "change24h": ((last - op) / op * 100) if op > 0 else 0.0,
+                "volume":    float(d.get("volCcy24h") or 0),
+                "bid":       float(d.get("bidPx") or 0),
+                "ask":       float(d.get("askPx") or 0),
+                "high24h":   float(d.get("high24h") or 0),
+                "low24h":    float(d.get("low24h") or 0),
+            })
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def okx_inst(symbol):
+    """BTCUSDT → BTC-USDT"""
+    return symbol[:-4] + "-USDT" if symbol.endswith("USDT") else symbol
+
+
+def bingx_params():
+    return {"timestamp": _ts()}
+
+
 PARSERS = {
+    "aster":   parse_binance_spot,   # Aster API сумісне з Binance
+    "okx":     parse_okx_spot,
     "binance": parse_binance_spot,
     "bybit":   parse_bybit_spot,
     "mexc":    parse_mexc_spot,
@@ -259,10 +317,12 @@ def api_prices():
 
     tasks = {
         "binance": (EXCHANGE_APIS["binance"]["spot"], {"symbol": symbol}),
+        "aster":   (EXCHANGE_APIS["aster"]["spot"], {"symbol": symbol}),
         # bybit: blocked on cloud
         "mexc":    (EXCHANGE_APIS["mexc"]["spot"], {"symbol": symbol}),
         "gate":    (EXCHANGE_APIS["gate"]["spot"], None),
-        "bingx":  (f"https://open-api.bingx.com/openApi/spot/v1/ticker/24hr?symbol={symbol[:3]}-{symbol[3:]}", None),
+        "bingx":  (EXCHANGE_APIS["bingx"]["spot"], {"symbol": f"{symbol[:-4]}-USDT", "timestamp": _ts()}),
+        "okx":     (["https://www.okx.com/api/v5/market/ticker"], {"instId": okx_inst(symbol)}),
     }
     raw = fetch_all_parallel(tasks)
 
@@ -297,6 +357,9 @@ def api_spread():
     tasks = {
         "binance": (EXCHANGE_APIS["binance"]["spot"], None),
         # bybit blocked on cloud: ("https://api.bybit.com/v5/market/tickers?category=spot", None),
+        "aster":   (EXCHANGE_APIS["aster"]["spot"], None),
+        "bingx":   (EXCHANGE_APIS["bingx"]["spot"], bingx_params()),
+        "okx":     (EXCHANGE_APIS["okx"]["spot"], None),
         "mexc":    (EXCHANGE_APIS["mexc"]["spot"], None),
         "gate":    (EXCHANGE_APIS["gate"]["spot"], None),
     }
@@ -368,9 +431,64 @@ def api_funding():
         # bybit blocked on cloud
         "gate":    ("https://api.gateio.ws/api/v4/futures/usdt/tickers", None),
         "mexc":    ("https://contract.mexc.com/api/v1/contract/ticker", None),
+        "binance": (EXCHANGE_APIS["binance"]["funding"], None),
+        "binance_i": (["https://fapi.binance.com/fapi/v1/fundingInfo"], None),
+        "aster":   (EXCHANGE_APIS["aster"]["funding"], None),
+        "aster_i": (["https://fapi.asterdex.com/fapi/v1/fundingInfo"], None),
+        "bingx":   (EXCHANGE_APIS["bingx"]["funding"], bingx_params()),
+        "okx":     (["https://www.okx.com/api/v5/public/funding-rate"], {"instId": "ANY"}),
+        "okx_mark": (["https://www.okx.com/api/v5/public/mark-price"], {"instType": "SWAP"}),
     }
     raw = fetch_all_parallel(tasks)
     result = []
+
+    def add_row(name, sym, rate, color, mark, hours):
+        hours = hours if hours and hours > 0 else 8
+        result.append({"exchange": name, "symbol": sym, "rate": round(rate, 4),
+                       "annualized": round(rate * (24 / hours) * 365, 2), "color": color,
+                       "mark_price": mark, "positive": rate >= 0, "interval": f"{int(hours)}H"})
+
+    # Binance-сумісні (Binance, Aster): premiumIndex + fundingInfo (інтервали)
+    for key, label in (("binance", "Binance"), ("aster", "Aster")):
+        info = {}
+        for it in (raw.get(key + "_i") or []):
+            try: info[it.get("symbol")] = float(it.get("fundingIntervalHours") or 8)
+            except (TypeError, ValueError): pass
+        for d in (raw.get(key) if isinstance(raw.get(key), list) else []):
+            sym = d.get("symbol", "")
+            if not sym.endswith("USDT"): continue
+            try:
+                add_row(label, sym, float(d.get("lastFundingRate") or 0) * 100, EXCHANGE_APIS[key]["color"],
+                        float(d.get("markPrice") or 0), info.get(sym, 8))
+            except (TypeError, ValueError):
+                continue
+
+    # BingX swap premiumIndex
+    bx = raw.get("bingx") or {}
+    bx = bx.get("data") if isinstance(bx, dict) else None
+    for d in (bx if isinstance(bx, list) else ([bx] if isinstance(bx, dict) else [])):
+        sym = str(d.get("symbol", "")).replace("-", "")
+        if not sym.endswith("USDT"): continue
+        try:
+            add_row("BingX", sym, float(d.get("lastFundingRate") or 0) * 100, EXCHANGE_APIS["bingx"]["color"],
+                    float(d.get("markPrice") or 0), 8)
+        except (TypeError, ValueError):
+            continue
+
+    # OKX swaps
+    okx_mark = {}
+    for d in ((raw.get("okx_mark") or {}).get("data") or []):
+        try: okx_mark[d.get("instId")] = float(d.get("markPx") or 0)
+        except (TypeError, ValueError): pass
+    for d in ((raw.get("okx") or {}).get("data") or []):
+        inst = d.get("instId", "")
+        if not inst.endswith("-USDT-SWAP"): continue
+        try:
+            hrs = (int(d.get("nextFundingTime")) - int(d.get("fundingTime"))) / 3600000.0
+            add_row("OKX", inst.replace("-SWAP", "").replace("-", ""), float(d.get("fundingRate") or 0) * 100,
+                    EXCHANGE_APIS["okx"]["color"], okx_mark.get(inst, 0), round(hrs) or 8)
+        except (TypeError, ValueError):
+            continue
 
     # Інтервали Gate.io (секунди → години)
     gate_intervals = {}
@@ -632,6 +750,10 @@ def api_ticker():
     # tasks["tickers_bybit"] blocked on cloud
     tasks["tickers_mexc"]    = (EXCHANGE_APIS["mexc"]["spot"], None)
     tasks["tickers_gate"]    = (EXCHANGE_APIS["gate"]["spot"], None)
+    tasks["tickers_binance"] = (EXCHANGE_APIS["binance"]["spot"], None)
+    tasks["tickers_aster"]   = (EXCHANGE_APIS["aster"]["spot"], None)
+    tasks["tickers_bingx"]   = (EXCHANGE_APIS["bingx"]["spot"], bingx_params())
+    tasks["tickers_okx"]     = (EXCHANGE_APIS["okx"]["spot"], None)
 
     raw = fetch_all_parallel(tasks)
 
@@ -649,9 +771,12 @@ def api_ticker():
         # MEXC kline format same as Binance: [[time,open,high,low,close,vol,...]]
         kline_list = klines if isinstance(klines, list) else []
         if not kline_list: continue
-        last  = kline_list[-1]  # newest last
-        open_ = float(last[1])
-        close = float(last[4])
+        try:
+            last  = kline_list[-1]  # newest last
+            open_ = float(last[1])
+            close = float(last[4])
+        except (KeyError, IndexError, TypeError, ValueError):
+            continue
         change_8h = ((close - open_) / open_ * 100) if open_ > 0 else 0
         tokens.append({
             "symbol":    sym,
@@ -668,6 +793,10 @@ def api_ticker():
         "tickers_bybit":   ("bybit",   parse_bybit_spot),
         "tickers_mexc":    ("mexc",    parse_mexc_spot),
         "tickers_gate":    ("gate",    parse_gate_spot),
+        "tickers_binance": ("binance", parse_binance_spot),
+        "tickers_aster":   ("aster",   parse_binance_spot),
+        "tickers_bingx":   ("bingx",   parse_bingx_spot),
+        "tickers_okx":     ("okx",     parse_okx_spot),
     }
     for key, (ex_name, parser) in parse_map.items():
         items = parser(raw.get(key))
