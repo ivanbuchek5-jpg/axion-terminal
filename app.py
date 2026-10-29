@@ -14,6 +14,36 @@ import os
 app = Flask(__name__, static_folder="static")
 CORS(app)
 
+# ── Performance: gzip + cache headers (no extra dependencies) ────────────────
+import gzip as _gzip
+
+@app.after_request
+def _optimize(resp):
+    try:
+        p = request.path
+        if resp.status_code == 200 and not p.startswith("/api/"):
+            if request.args.get("v"):
+                resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            elif p.endswith((".png", ".ico", ".jpg", ".svg")):
+                resp.headers["Cache-Control"] = "public, max-age=86400"
+            else:
+                resp.headers["Cache-Control"] = "public, max-age=60"
+        ctype = resp.headers.get("Content-Type", "")
+        if (resp.status_code == 200
+                and "gzip" in request.headers.get("Accept-Encoding", "")
+                and "Content-Encoding" not in resp.headers
+                and any(t in ctype for t in ("text/", "javascript", "json"))):
+            resp.direct_passthrough = False
+            data = resp.get_data()
+            if len(data) > 600:
+                resp.set_data(_gzip.compress(data, 5))
+                resp.headers["Content-Encoding"] = "gzip"
+                resp.headers["Vary"] = "Accept-Encoding"
+                resp.headers["Content-Length"] = str(len(resp.get_data()))
+    except Exception:
+        pass
+    return resp
+
 # ─── Timeout для зовнішніх запитів ────────────────────────────────────────────
 TIMEOUT = 5
 
