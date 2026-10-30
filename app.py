@@ -598,6 +598,48 @@ def api_market():
     })
 
 
+# ─── /api/logos → {symbol: coinmarketcap_id} (logo = s2.coinmarketcap.com/static/img/coins/64x64/<id>.png) ──
+_LOGO_CACHE = {"t": 0, "map": {}}
+
+@app.route("/api/logos")
+def api_logos():
+    now = time.time()
+    if _LOGO_CACHE["map"] and now - _LOGO_CACHE["t"] < 6 * 3600:
+        resp = jsonify({"map": _LOGO_CACHE["map"]})
+        resp.headers["Cache-Control"] = "public, max-age=3600"
+        return resp
+    best = {}  # symbol -> (rank, id)
+    key = os.environ.get("CMC_API_KEY")
+    rows = []
+    if key:
+        try:
+            r = requests.get("https://pro-api.coinmarketcap.com/v1/cryptocurrency/map",
+                             params={"listing_status": "active", "limit": 5000, "sort": "cmc_rank"},
+                             headers={"X-CMC_PRO_API_KEY": key, "Accept": "application/json"}, timeout=10)
+            rows = [(d.get("symbol"), d.get("id"), d.get("rank") or 10**9) for d in r.json().get("data", [])]
+        except Exception as e:
+            print("[ERR] cmc pro map:", e)
+    if not rows:
+        d = safe_get("https://api.coinmarketcap.com/data-api/v3/map/all",
+                     {"listing_status": "active", "start": 1, "limit": 5000})
+        try:
+            data = (d or {}).get("data", {}).get("cryptoCurrencyMap", [])
+            rows = [(x.get("symbol"), x.get("id"), x.get("rank") or 10**9) for x in data]
+        except Exception:
+            rows = []
+    for sym, cid, rank in rows:
+        if sym and cid and (sym.upper() not in best or rank < best[sym.upper()][0]):
+            best[sym.upper()] = (rank, cid)
+    m = {s: v[1] for s, v in best.items()}
+    if m:
+        _LOGO_CACHE.update(t=now, map=m)
+    elif _LOGO_CACHE["map"]:
+        m = _LOGO_CACHE["map"]
+    resp = jsonify({"map": m})
+    resp.headers["Cache-Control"] = "public, max-age=3600" if m else "no-store"
+    return resp
+
+
 # ─── /api/rates ───────────────────────────────────────────────────────────────
 @app.route("/api/rates")
 def api_rates():

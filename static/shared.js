@@ -131,37 +131,44 @@
   AX.cls = function (n) { return Number(n) >= 0 ? "up" : "dn"; };
   AX.base = function (s) { return String(s || "").toUpperCase().replace("/", "").replace(/USDT$/, ""); };
   AX.go = function (sym) { AX.navigate("token.html?symbol=" + encodeURIComponent(AX.base(sym))); };
-  /* ── token logos: CoinCap → cryptocurrency-icons CDN → plain text (rounded-square tile) ── */
-  var ICB = {};
-  try { ICB = JSON.parse(sessionStorage.getItem("axion-ic") || "{}"); } catch (e) {}
-  function icSrc(s, n) {
-    var l = s.toLowerCase(), alt = l.replace(/^(1000000|10000|1000|1m)/, "");
-    var L = [
-      "https://assets.coincap.io/assets/icons/" + l + "@2x.png",
-      "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/" + l + ".png"
-    ];
-    if (alt && alt !== l) L.push("https://assets.coincap.io/assets/icons/" + alt + "@2x.png", "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/" + alt + ".png");
-    return L[n] || null;
-  }
-  function icSave() { try { sessionStorage.setItem("axion-ic", JSON.stringify(ICB)); } catch (e) {} }
+  /* ── token logos: CoinMarketCap (id map from /api/logos) → rounded-square tile, text fallback ── */
+  var LM = null, ICB = {};
+  try { LM = JSON.parse(localStorage.getItem("axion-lm") || "null"); } catch (e) {}
+  var lmFresh = LM && LM.t && Date.now() - LM.t < 864e5;
+  function lid(s) { var m = LM && LM.m; if (!m) return 0; return m[s] || m[s.replace(/^(1000000|10000|1000|1M)/i, "")] || 0; }
+  function lurl(id) { return "https://s2.coinmarketcap.com/static/img/coins/64x64/" + id + ".png"; }
   AX.ico = function (b) {
-    var s = AX.base(b), t = '<i class="ti">' + AX.esc(s.slice(0, 4)) + "</i>";
-    if (!s || !/^[A-Za-z0-9]{1,12}$/.test(s) || ICB[s] === -1) return t;
-    return t + '<img class="tl" data-s="' + AX.esc(s) + '" data-n="' + (ICB[s] || 0) + '" src="' + icSrc(s, ICB[s] || 0) + '" alt="" loading="lazy" decoding="async" crossorigin="anonymous">';
+    var s = AX.base(b).toUpperCase(), id = /^[A-Z0-9]{1,12}$/.test(s) ? lid(s) : 0;
+    return '<i class="ti" data-s="' + AX.esc(s) + '">' + AX.esc(s.slice(0, 4)) + "</i>" +
+      (id && !ICB[id] ? '<img class="tl" data-id="' + id + '" src="' + lurl(id) + '" alt="" decoding="async" crossorigin="anonymous">' : "");
   };
+  function upgrade() {
+    if (!LM || !LM.m) return;
+    [].forEach.call(document.querySelectorAll("i.ti[data-s]"), function (t) {
+      if (t.nextElementSibling && t.nextElementSibling.tagName === "IMG") return;
+      var id = lid(t.getAttribute("data-s")); if (!id || ICB[id]) return;
+      var im = new Image(); im.className = "tl"; im.setAttribute("data-id", id); im.alt = ""; im.decoding = "async"; im.crossOrigin = "anonymous"; im.src = lurl(id);
+      t.parentNode.appendChild(im);
+    });
+  }
+  if (!lmFresh) {
+    fetch("/api/logos").then(function (r) { return r.json(); }).then(function (j) {
+      if (j && j.map && Object.keys(j.map).length) { LM = { t: Date.now(), m: j.map }; try { localStorage.setItem("axion-lm", JSON.stringify(LM)); } catch (e) {} upgrade(); }
+    }).catch(function () {});
+  }
+  var upT = 0;
+  new MutationObserver(function () { clearTimeout(upT); upT = setTimeout(upgrade, 60); }).observe(document.documentElement, { childList: true, subtree: true });
   document.addEventListener("error", function (e) {
     var im = e.target;
     if (!im || im.tagName !== "IMG" || !im.classList.contains("tl")) return;
-    var s = im.getAttribute("data-s"), n = (+im.getAttribute("data-n") || 0) + 1, u = icSrc(s, n);
-    if (u) { im.setAttribute("data-n", n); im.src = u; } else { ICB[s] = -1; icSave(); im.remove(); }
+    ICB[im.getAttribute("data-id")] = 1; im.remove();
   }, true);
   document.addEventListener("load", function (e) {
     var im = e.target;
     if (!im || im.tagName !== "IMG" || !im.classList.contains("tl")) return;
-    var s = im.getAttribute("data-s"); ICB[s] = +im.getAttribute("data-n") || 0; icSave();
     var box = im.parentNode; if (!box) return;
     box.classList.add("has-logo");
-    try { /* tile colour = the logo's own edge colour, so round logos fill the rounded square */
+    try {
       var c = document.createElement("canvas"); c.width = c.height = 16;
       var x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(im, 0, 0, 16, 16);
       var p = x.getImageData(8, 1, 1, 1).data;
@@ -470,7 +477,7 @@
     var top = document.createElement("div");
     top.innerHTML =
       '<header class="nav" id="nav"><div class="nav-in">' +
-      '<a class="brand" href="index.html" aria-label="AXION TERMINAL"><span class="logo"><img src="logo.png" alt=""></span>' +
+      '<a class="brand" href="index.html" aria-label="AXION TERMINAL"><span class="logo"><img src="logo.png?v=9" alt="" decoding="sync"></span>' +
       '<span class="brand-t"><b>AXION</b><i>TERMINAL</i></span></a>' +
       '<nav class="nav-links" id="navLinks" aria-label="Main">' +
       NAV.map(function (n) { return '<a href="' + n[1] + '"' + (n[0] === page ? ' aria-current="page"' : "") + ">" + n[2] + "</a>"; }).join("") + "</nav>" +

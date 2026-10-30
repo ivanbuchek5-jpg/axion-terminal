@@ -10,11 +10,11 @@
 <script>(function(){var t=null;try{t=localStorage.getItem('axion-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#E9EAEC':'#25272D')})()</script>
 <script>(function(){var d=document.documentElement;try{var t=+sessionStorage.getItem('axion-pt');sessionStorage.removeItem('axion-pt');if(t&&Date.now()-t<10000&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){d.classList.add('pt-in');setTimeout(function(){d.classList.remove('pt-in')},4500)}}catch(e){}})()</script>
 <style>html{background:#25272D}html[data-theme=light]{background:#E9EAEC}html.pt-in{background:#0E0F11}html:not(.css) body{visibility:hidden}</style>
-<link rel="stylesheet" href="axion.css?v=8" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
+<link rel="stylesheet" href="axion.css?v=9" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
 <script>setTimeout(function(){document.documentElement.classList.add("css")},3000)</script>
 </head>
 <body>
-<div id="pt" aria-hidden="true"><div class="pt-glow"></div><div class="pt-core"><div class="pt-logo"><img src="logo.png" alt=""></div><div class="pt-word">AXION <b>TERMINAL</b></div></div><div class="pt-bar"><i></i></div></div>
+<div id="pt" aria-hidden="true"><div class="pt-glow"></div><div class="pt-core"><div class="pt-logo"></div><div class="pt-word">AXION <b>TERMINAL</b></div></div><div class="pt-bar"><i></i></div></div>
 <div class="shell">
 <main>
   <section class="card hero rise" style="--d:2">
@@ -35,13 +35,13 @@
   </section>
 
   <section class="grid rise" style="--d:3;grid-template-columns:minmax(0,1fr)" id="lay">
-    <div class="card chart-card" style="display:flex;flex-direction:column;min-height:480px">
+    <div class="card chart-card" style="display:flex;flex-direction:column;height:clamp(560px,76vh,820px)">
       <div class="tf-wrap" style="padding:14px 14px 10px">
         <div class="seg" id="tfSeg" style="min-width:340px;max-width:420px">
           <button data-v="1">1m</button><button data-v="5">5m</button><button data-v="15">15m</button><button data-v="60" class="on">1H</button><button data-v="240">4H</button><button data-v="D">1D</button><button data-v="W">1W</button>
         </div>
       </div>
-      <div id="tv-chart" style="flex:1;min-height:400px"></div>
+      <div id="tv-chart" style="flex:1;min-height:0"></div>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
       <div class="card flush tbl" style="--cm:1.2fr 1fr 1fr;--cd:1.2fr 1fr 1fr">
@@ -59,8 +59,8 @@
 </div>
 
 <script src="https://s3.tradingview.com/tv.js"></script>
-<script src="autocomplete.js?v=8"></script>
-<script src="shared.js?v=8"></script>
+<script src="autocomplete.js?v=9"></script>
+<script src="shared.js?v=9"></script>
 <script>
 (function(){
   AX.init("prices");
@@ -85,7 +85,7 @@
     if (!window.TradingView){ el.innerHTML = AX.empty("alert", "TradingView failed to load"); return; }
     var c = AX.tvColors();
     new TradingView.widget({ autosize: true, symbol: tvEx + ":" + symbol, interval: tf, timezone: "Etc/UTC", theme: c.theme, style: "1", locale: "en",
-      toolbar_bg: c.bg, backgroundColor: c.bg, gridColor: c.grid, enable_publishing: false, hide_top_toolbar: true, hide_legend: false, save_image: false,
+      toolbar_bg: c.bg, backgroundColor: c.bg, gridColor: c.grid, enable_publishing: false, allow_symbol_change: false, disabled_features: ["header_symbol_search","header_compare","symbol_search_hot_key","header_undo_redo"], hide_top_toolbar: true, hide_legend: false, save_image: false,
       container_id: "tv-chart", studies: ["MASimple@tv-basicstudies"],
       overrides: { "mainSeriesProperties.priceAxisProperties.percentage": false, "mainSeriesProperties.priceAxisProperties.log": false, "mainSeriesProperties.priceAxisProperties.indexedTo100": false } });
   }
