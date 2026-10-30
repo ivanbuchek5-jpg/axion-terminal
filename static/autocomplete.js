@@ -33,7 +33,7 @@ const STYLES = `
 .ct-dropdown::-webkit-scrollbar { display: none; }
 .ct-dropdown-item {
   display: grid;
-  grid-template-columns: 1fr auto 70px;
+  grid-template-columns: auto 1fr auto 70px;
   align-items: center;
   padding: 9px 10px;
   cursor: pointer;
@@ -150,7 +150,8 @@ window.initAutocomplete = function(inputEl, onSelect, opts = {}) {
       item.className = 'ct-dropdown-item';
       item.dataset.idx = i;
       item.innerHTML = `
-        <div>
+        <span class="ico" style="width:32px;height:32px;border-radius:10px;background:var(--surface2,#1A1C20);display:grid;place-items:center;flex:none;font:700 10px monospace;color:var(--accent-text,#00FF48)">${window.AX && AX.ico ? AX.ico(s.base) : ''}</span>
+        <div style="flex:1;min-width:0">
           <span class="sym">${s.base}</span>
           <div class="name">${esc(name)}</div>
         </div>

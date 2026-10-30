@@ -199,6 +199,11 @@ html.vt-eclipse::view-transition-new(root){mask-image:radial-gradient(circle at 
 @media(hover:hover) and (pointer:fine){.trow:hover{background:var(--surface2)}.pill:hover:not(.on){border-color:var(--accent-text);color:var(--fg)}.btn:hover{border-color:var(--accent-text)}.btn.primary:hover{filter:brightness(1.05)}.item:hover{background:var(--surface2)}}
 .trow.fresh,.item.fresh{animation:rise 380ms var(--ease-out) both;animation-delay:calc(var(--d,0)*32ms)}
 .sym{display:flex;align-items:center;gap:10px;font-family:var(--sans)}
+.ico{position:relative;overflow:hidden}
+.ico .ti{font-style:normal}
+.ico img.tl{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity 160ms var(--ease-out)}
+.ico.has-logo img.tl{opacity:1}
+.ico.has-logo .ti{visibility:hidden}
 .sym .ico{width:36px;height:36px;border-radius:12px;background:var(--surface2);display:grid;place-items:center;font:700 .6875rem var(--mono);color:var(--accent-text);flex:none}
 .sym b{font-weight:600;font-size:.9375rem;letter-spacing:-.01em;display:block;line-height:1.2}
 .sym small{color:var(--muted);font:500 .6875rem var(--mono);display:block;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

@@ -10,7 +10,7 @@
 <script>(function(){var t=null;try{t=localStorage.getItem('axion-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#E9EAEC':'#25272D')})()</script>
 <script>(function(){var d=document.documentElement;try{var t=+sessionStorage.getItem('axion-pt');sessionStorage.removeItem('axion-pt');if(t&&Date.now()-t<10000&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){d.classList.add('pt-in');setTimeout(function(){d.classList.remove('pt-in')},4500)}}catch(e){}})()</script>
 <style>html{background:#25272D}html[data-theme=light]{background:#E9EAEC}html.pt-in{background:#0E0F11}html:not(.css) body{visibility:hidden}</style>
-<link rel="stylesheet" href="axion.css?v=7" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
+<link rel="stylesheet" href="axion.css?v=8" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
 <script>setTimeout(function(){document.documentElement.classList.add("css")},3000)</script>
 </head>
 <body>
@@ -62,8 +62,8 @@
 </main>
 </div>
 
-<script src="autocomplete.js?v=7"></script>
-<script src="shared.js?v=7"></script>
+<script src="autocomplete.js?v=8"></script>
+<script src="shared.js?v=8"></script>
 <script>
 (function(){
   AX.init("converter");
@@ -92,8 +92,8 @@
   var amtEl = document.getElementById("fromAmt"), toEl = document.getElementById("toAmt");
 
   function paintPicks(){
-    document.getElementById("fromPick").innerHTML = '<span class="ico" style="width:28px;height:28px;border-radius:10px;background:var(--bg);display:grid;place-items:center;font-size:.625rem;color:var(--accent-text)">' + AX.esc(from.slice(0, 3)) + "</span>" + AX.esc(from) + AX.icon("chev");
-    document.getElementById("toPick").innerHTML = '<span class="ico" style="width:28px;height:28px;border-radius:10px;background:var(--bg);display:grid;place-items:center;font-size:.625rem;color:var(--accent-text)">' + AX.esc(to.slice(0, 3)) + "</span>" + AX.esc(to) + AX.icon("chev");
+    document.getElementById("fromPick").innerHTML = '<span class="ico" style="width:28px;height:28px;border-radius:10px;background:var(--bg);display:grid;place-items:center;font-size:.625rem;color:var(--accent-text)">' + (isFiat(from) ? AX.esc(from.slice(0, 3)) : AX.ico(from)) + "</span>" + AX.esc(from) + AX.icon("chev");
+    document.getElementById("toPick").innerHTML = '<span class="ico" style="width:28px;height:28px;border-radius:10px;background:var(--bg);display:grid;place-items:center;font-size:.625rem;color:var(--accent-text)">' + (isFiat(to) ? AX.esc(to.slice(0, 3)) : AX.ico(to)) + "</span>" + AX.esc(to) + AX.icon("chev");
     document.getElementById("fromName").textContent = name(from);
     document.getElementById("toName").textContent = name(to);
   }
@@ -107,7 +107,7 @@
   function multi(usd){
     var out = [["USD","$"],["EUR","€"],["UAH","₴"],["GBP","£"],["BTC","₿"],["ETH","Ξ"]].filter(function(o){ return o[0] !== from && o[0] !== to; });
     document.getElementById("multi").innerHTML = out.map(function(o){
-      return '<div class="item" data-c="' + o[0] + '"><span class="ico">' + o[0].slice(0, 3) + '</span><span class="b"><b>' + o[0] + "</b><small>" + name(o[0]) + '</small></span><span class="v ' + (isFiat(o[0]) ? "" : "up") + '">' + o[1] + fmt(fromUSD(o[0], usd)) + "</span></div>";
+      return '<div class="item" data-c="' + o[0] + '"><span class="ico">' + (isFiat(o[0]) ? o[0].slice(0, 3) : AX.ico(o[0])) + '</span><span class="b"><b>' + o[0] + "</b><small>" + name(o[0]) + '</small></span><span class="v ' + (isFiat(o[0]) ? "" : "up") + '">' + o[1] + fmt(fromUSD(o[0], usd)) + "</span></div>";
     }).join("");
     [].forEach.call(document.querySelectorAll("#multi .item"), function(el){ el.addEventListener("click", function(){ quick(from, el.getAttribute("data-c")); }); });
   }
@@ -151,7 +151,7 @@
       }).slice(0, 80);
       list.innerHTML = cs.length ? cs.map(function(c){
         var sel = (side === "from" ? from : to) === c;
-        return '<div class="item" data-c="' + c + '" style="margin:0 -18px;padding:10px 18px"><span class="ico">' + AX.esc(c.slice(0, 3)) + '</span><span class="b"><b>' + AX.esc(c) + "</b><small>" + AX.esc(name(c)) + "</small></span>" + (sel ? '<span class="up">' + AX.icon("check") + "</span>" : "") + "</div>";
+        return '<div class="item" data-c="' + c + '" style="margin:0 -18px;padding:10px 18px"><span class="ico">' + (isFiat(c) ? AX.esc(c.slice(0, 3)) : AX.ico(c)) + '</span><span class="b"><b>' + AX.esc(c) + "</b><small>" + AX.esc(name(c)) + "</small></span>" + (sel ? '<span class="up">' + AX.icon("check") + "</span>" : "") + "</div>";
       }).join("") : AX.empty("empty", "Nothing found");
       [].forEach.call(list.querySelectorAll(".item"), function(el){
         el.addEventListener("click", function(){

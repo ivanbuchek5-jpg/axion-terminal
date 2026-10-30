@@ -131,7 +131,43 @@
   AX.cls = function (n) { return Number(n) >= 0 ? "up" : "dn"; };
   AX.base = function (s) { return String(s || "").toUpperCase().replace("/", "").replace(/USDT$/, ""); };
   AX.go = function (sym) { AX.navigate("token.html?symbol=" + encodeURIComponent(AX.base(sym))); };
-  AX.ico = function (b) { return AX.esc(AX.base(b).slice(0, 3)); };
+  /* ── token logos: CoinCap → cryptocurrency-icons CDN → plain text (rounded-square tile) ── */
+  var ICB = {};
+  try { ICB = JSON.parse(sessionStorage.getItem("axion-ic") || "{}"); } catch (e) {}
+  function icSrc(s, n) {
+    var l = s.toLowerCase(), alt = l.replace(/^(1000000|10000|1000|1m)/, "");
+    var L = [
+      "https://assets.coincap.io/assets/icons/" + l + "@2x.png",
+      "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/" + l + ".png"
+    ];
+    if (alt && alt !== l) L.push("https://assets.coincap.io/assets/icons/" + alt + "@2x.png", "https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/" + alt + ".png");
+    return L[n] || null;
+  }
+  function icSave() { try { sessionStorage.setItem("axion-ic", JSON.stringify(ICB)); } catch (e) {} }
+  AX.ico = function (b) {
+    var s = AX.base(b), t = '<i class="ti">' + AX.esc(s.slice(0, 4)) + "</i>";
+    if (!s || !/^[A-Za-z0-9]{1,12}$/.test(s) || ICB[s] === -1) return t;
+    return t + '<img class="tl" data-s="' + AX.esc(s) + '" data-n="' + (ICB[s] || 0) + '" src="' + icSrc(s, ICB[s] || 0) + '" alt="" loading="lazy" decoding="async" crossorigin="anonymous">';
+  };
+  document.addEventListener("error", function (e) {
+    var im = e.target;
+    if (!im || im.tagName !== "IMG" || !im.classList.contains("tl")) return;
+    var s = im.getAttribute("data-s"), n = (+im.getAttribute("data-n") || 0) + 1, u = icSrc(s, n);
+    if (u) { im.setAttribute("data-n", n); im.src = u; } else { ICB[s] = -1; icSave(); im.remove(); }
+  }, true);
+  document.addEventListener("load", function (e) {
+    var im = e.target;
+    if (!im || im.tagName !== "IMG" || !im.classList.contains("tl")) return;
+    var s = im.getAttribute("data-s"); ICB[s] = +im.getAttribute("data-n") || 0; icSave();
+    var box = im.parentNode; if (!box) return;
+    box.classList.add("has-logo");
+    try { /* tile colour = the logo's own edge colour, so round logos fill the rounded square */
+      var c = document.createElement("canvas"); c.width = c.height = 16;
+      var x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(im, 0, 0, 16, 16);
+      var p = x.getImageData(8, 1, 1, 1).data;
+      box.style.background = p[3] > 200 ? "rgb(" + p[0] + "," + p[1] + "," + p[2] + ")" : "#fff";
+    } catch (er) { box.style.background = "#fff"; }
+  }, true);
 
   /* ── count-up ── */
   AX.count = function (el, to, fmt, dur) {
