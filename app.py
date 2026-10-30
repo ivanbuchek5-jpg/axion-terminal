@@ -16,6 +16,7 @@ CORS(app)
 
 # ── Performance: gzip + cache headers (no extra dependencies) ────────────────
 import gzip as _gzip
+CACHE_GEN = "8"  # bump to force every browser to drop its cached copy once
 
 @app.after_request
 def _optimize(resp):
@@ -27,7 +28,11 @@ def _optimize(resp):
             elif p.endswith((".png", ".ico", ".jpg", ".svg")):
                 resp.headers["Cache-Control"] = "no-cache"  # revalidate (ETag/304): a replaced logo shows up immediately
             else:
-                resp.headers["Cache-Control"] = "public, max-age=60"
+                resp.headers["Cache-Control"] = "no-cache"  # html/js/css without ?v= → always revalidate (ETag/304)
+            if (resp.mimetype == "text/html" and request.cookies.get("axion_cv") != CACHE_GEN):
+                # one-time purge of stale cached copies in the visitor's browser after a release
+                resp.headers["Clear-Site-Data"] = '"cache"'
+                resp.set_cookie("axion_cv", CACHE_GEN, max_age=31536000, samesite="Lax")
         ctype = resp.headers.get("Content-Type", "")
         if (resp.status_code == 200
                 and "gzip" in request.headers.get("Accept-Encoding", "")
