@@ -10,7 +10,7 @@
 <script>(function(){var t=null;try{t=localStorage.getItem('axion-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#E9EAEC':'#25272D')})()</script>
 <script>(function(){var d=document.documentElement;try{var t=+sessionStorage.getItem('axion-pt');sessionStorage.removeItem('axion-pt');if(t&&Date.now()-t<10000&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){d.classList.add('pt-in');setTimeout(function(){d.classList.remove('pt-in')},4500)}}catch(e){}})()</script>
 <style>html{background:#25272D}html[data-theme=light]{background:#E9EAEC}html.pt-in{background:#0E0F11}html:not(.css) body{visibility:hidden}</style>
-<link rel="stylesheet" href="axion.css?v=11" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
+<link rel="stylesheet" href="axion.css?v=12" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
 <script>setTimeout(function(){document.documentElement.classList.add("css")},3000)</script>
 </head>
 <body>
@@ -46,30 +46,31 @@
         <button class="btn sm" id="bFit" type="button">Fit</button>
         <button class="btn sm" id="bClr" type="button">Clear</button>
       </div>
-      <div id="sp-chart"></div>
+      <div class="chart-w"><div id="sp-chart"></div><div class="tip" id="sp-tip"></div></div>
       <div class="mu" id="hNote" style="padding:8px 16px 12px;font:500 .6875rem var(--mono)"></div>
     </div>
 
     <div style="display:grid;gap:14px;align-content:start;min-width:0">
       <div class="card">
-        <div class="card-h"><span class="t">Exchanges</span><span class="chip sm" id="fees">est. fees</span></div>
+        <div class="card-h"><span class="t">Exchanges</span></div>
         <div class="two" id="exs"></div>
       </div>
       <div class="card">
-        <div class="card-h"><span class="t">Spread calculator</span><span class="chip sm">live books</span></div>
+        <div class="card-h"><span class="t">Spread calculator</span><span class="chip sm" id="cMode">live books</span></div>
         <div class="calc">
           <div class="row2">
-            <input class="field" id="cAmt" inputmode="decimal" autocomplete="off" placeholder="Amount" value="1000">
+            <input class="field" id="cAmt" inputmode="decimal" autocomplete="off" placeholder="Amount" value="1000" aria-label="Amount">
             <div class="seg" id="cUnit" style="min-width:130px"><button data-v="usd" class="on">USD</button><button data-v="coin">Coins</button></div>
           </div>
-          <div class="sumbox">
-            <div><div class="k">Open spread</div><div class="v" id="cEntry">—</div></div>
-            <div><div class="k">PNL (close now)</div><div class="v" id="cPnl">—</div></div>
-            <div><div class="k">Close spread</div><div class="v" id="cExit">—</div></div>
-          </div>
           <div class="kv" style="padding:0" id="cKv"></div>
+          <div class="pos-sum">
+            <div><div class="k" id="cK1">Open spread</div><div class="v" id="cEntry">—</div></div>
+            <div><div class="k" id="cK2">PNL (close now)</div><div class="v" id="cPnl">—</div></div>
+            <div><div class="k" id="cK3">Close spread</div><div class="v" id="cExit">—</div></div>
+          </div>
           <div class="mu" id="cWarn" style="font:500 .75rem var(--sans);min-height:1em"></div>
-          <div class="row-f"><button class="btn primary" id="cOpen" type="button" style="flex:1">Open position</button><button class="btn" id="cClose" type="button" style="flex:1" hidden>Close position</button></div>
+          <div class="row-f" id="cBtnsA"><button class="btn primary" id="cOpen" type="button" style="flex:1">Open position</button></div>
+          <div class="btns3" id="cBtnsB" hidden><a class="btn" href="spread.html" id="cBack">Back</a><button class="btn ghost-g" id="cAdd" type="button">Increase position</button><button class="btn ghost-r" id="cClose" type="button">Close position</button></div>
         </div>
       </div>
     </div>
@@ -82,9 +83,9 @@
 </main>
 </div>
 
-<script src="lwc.js?v=11"></script>
-<script src="autocomplete.js?v=11"></script>
-<script src="shared.js?v=11"></script>
+<script src="lwc.js?v=12"></script>
+<script src="autocomplete.js?v=12"></script>
+<script src="shared.js?v=12"></script>
 <script>
 (function(){
   AX.init("spread", { ticker: false });
@@ -116,7 +117,7 @@
   }
 
   /* ── chart ── */
-  var chart = null, sE = null, sX = null, hist = { e: [], x: [] };
+  var chart = null, sE = null, sX = null, hist = { e: [], x: [] }, pxMap = {};
   function cc(){
     var l = AX.theme() === "light";
     return { txt: l ? "#6A6E78" : "#9A9DA6", grid: l ? "#E3E5E8" : "#2E3138", up: l ? "#00A63E" : "#00FF48", dn: l ? "#D6342C" : "#FF5A52", bg: "transparent" };
@@ -137,6 +138,23 @@
     sE = chart.addLineSeries(Object.assign({ color: c.up }, o));
     sX = chart.addLineSeries(Object.assign({ color: c.dn }, o));
     chart.timeScale().fitContent();
+    var tip = $("sp-tip"), wrap = $("sp-chart");
+    chart.subscribeCrosshairMove(function(p){
+      if (!p.time || !p.point || p.point.x < 0 || p.point.y < 0){ tip.classList.remove("on"); return; }
+      var e = p.seriesData.get(sE), x = p.seriesData.get(sX);
+      if (!e || !x){ tip.classList.remove("on"); return; }
+      var px = pxMap[p.time] || {}, dt = new Date(p.time * 1000), z = function(n){ return (n < 10 ? "0" : "") + n; };
+      var col = function(v){ return v >= 0 ? "var(--accent-text)" : "var(--neg)"; };
+      tip.innerHTML = '<div class="d">' + z(dt.getDate()) + "." + z(dt.getMonth() + 1) + ", " + z(dt.getHours()) + ":" + z(dt.getMinutes()) + ":" + z(dt.getSeconds()) + "</div>" +
+        '<div class="r"><i class="dt" style="background:var(--accent-text)"></i><span class="k">In %</span><span class="v" style="color:' + col(e.value) + '">' + sgn(e.value) + "</span></div>" +
+        '<div class="r"><i class="dt" style="background:var(--neg)"></i><span class="k">Out %</span><span class="v" style="color:' + col(x.value) + '">' + sgn(x.value) + "</span></div>" +
+        (px.l ? '<div class="r">' + AX.xt(lg[0]) + '<span class="k">' + AX.esc(AX.exName(lg[0])) + '</span><span class="v">' + AX.plain(px.l) + "</span></div>" +
+        '<div class="r">' + AX.xt(sh[0]) + '<span class="k">' + AX.esc(AX.exName(sh[0])) + '</span><span class="v">' + AX.plain(px.s) + "</span></div>" : "");
+      var w = tip.offsetWidth, h = tip.offsetHeight, W = wrap.clientWidth, H = wrap.clientHeight;
+      var left = p.point.x + 18; if (left + w > W - 60) left = p.point.x - w - 18;
+      var top = Math.min(Math.max(8, p.point.y - h / 2), H - h - 8);
+      tip.style.left = Math.max(4, left) + "px"; tip.style.top = top + "px"; tip.classList.add("on");
+    });
   }
   function recolor(){
     if (!chart) return; var c = cc();
@@ -145,9 +163,10 @@
   }
   window.addEventListener("axion:theme", recolor);
   var lastSave = 0;
-  function pushPoint(en, ex){
+  function pushPoint(en, ex, pl, ps){
     if (!chart) return;
     var t = Math.floor(Date.now() / 1000);
+    pxMap[t] = { l: pl, s: ps };
     var a = hist.e[hist.e.length - 1];
     if (a && a.time > t) return;
     if (a && a.time === t){ a.value = en; hist.x[hist.x.length - 1].value = ex; }
@@ -169,7 +188,7 @@
         if (!j || !j.t || !j.t.length){ $("hNote").textContent = "No history from the exchanges for this pair — chart fills live."; return; }
         var live = hist; // points collected while history was loading
         var e = [], x = [], first = live.e.length ? live.e[0].time : Infinity;
-        for (var i = 0; i < j.t.length; i++){ if (j.t[i] >= first) break; e.push({ time: j.t[i], value: j["in"][i] }); x.push({ time: j.t[i], value: j.out[i] }); }
+        for (var i = 0; i < j.t.length; i++){ if (j.t[i] >= first) break; pxMap[j.t[i]] = { l: j.l[i], s: j.s[i] }; e.push({ time: j.t[i], value: j["in"][i] }); x.push({ time: j.t[i], value: j.out[i] }); }
         hist = { e: e.concat(live.e), x: x.concat(live.x) };
         sE.setData(hist.e); sX.setData(hist.x); histOk = true;
         $("hNote").textContent = "History: 1-min candles · " + j.n + " points";
@@ -177,7 +196,7 @@
       }).catch(function(){ $("hNote").textContent = "History unavailable — chart fills live."; });
   }
   $("bFit").addEventListener("click", function(){ if (chart) chart.timeScale().fitContent(); });
-  $("bClr").addEventListener("click", function(){ hist = { e: [], x: [] }; if (sE){ sE.setData([]); sX.setData([]); } loadHist(); });
+  $("bClr").addEventListener("click", function(){ hist = { e: [], x: [] }; pxMap = {}; if (sE){ sE.setData([]); sX.setData([]); } loadHist(); });
 
   /* ── header + table + exchange cards ── */
   function renderHead(d){
@@ -190,25 +209,27 @@
     $("vFund").textContent = sgn(fn, 4); $("vFund").className = "v " + cls(fn);
     var fees = (d.long.fee + d.short.fee) * 2;
     $("vFee").textContent = fees.toFixed(3) + "%";
-    pushPoint(en, ex);
+    pushPoint(en, ex, (t.aL + t.bL) / 2, (t.aS + t.bS) / 2);
     var rows = [["LONG", "l", d.long], ["SHORT", "s", d.short]].map(function(r){
-      var l = r[2], bid = l.bids[0] ? l.bids[0][0] : 0, ask = l.asks[0] ? l.asks[0][0] : 0;
+      var l = r[2], bid = l.bids[0] ? l.bids[0][0] : 0, ask = l.asks[0] ? l.asks[0][0] : 0, url = AX.exUrl(l.ex, l.type, sym);
       var fund = l.type === "fut" ? '<span class="' + cls(l.rate) + '">' + sgn(l.rate, 4) + '</span> <span class="mu">' + l.hours + 'h · <span data-next="' + (l.next || "") + '">—</span></span>' : '<span class="mu">—</span>';
-      return "<tr><td><span class=\"role " + r[1] + "\">" + r[0] + "</span></td><td><span style=\"display:inline-flex;align-items:center;gap:8px\">" + AX.xt(l.ex) + AX.exName(l.ex) + ' <span class="chip sm">' + (l.type === "spot" ? "SPOT" : "FUTURES") + "</span></span></td>" +
-        "<td>" + AX.price(l.price || (bid + ask) / 2) + "</td><td>" + AX.plain(bid) + " / " + AX.plain(ask) + "</td><td>" + (l.type === "fut" && l.spot ? AX.price(l.spot) : "—") + "</td><td>" + fund + "</td><td>" + (l.vol24h ? AX.vol(l.vol24h) : "—") + "</td></tr>";
+      var px = AX.price(l.price || (bid + ask) / 2);
+      return "<tr><td><span class=\"role " + r[1] + "\">" + r[0] + "</span></td>" +
+        '<td><a class="xl" href="' + url + '" target="_blank" rel="noopener" title="Open ' + AX.esc(sym) + " on " + AX.esc(AX.exName(l.ex)) + '">' + AX.xt(l.ex) + '<span class="n">' + AX.esc(AX.exName(l.ex)) + '</span><span class="tg' + (l.type === "spot" ? " s" : "") + '">' + (l.type === "spot" ? "SPOT" : "FUTURES") + "</span></a></td>" +
+        '<td><a class="xl" href="' + url + '" target="_blank" rel="noopener"><span class="p">' + px + "</span></a></td>" +
+        "<td>" + AX.plain(bid) + " / " + AX.plain(ask) + "</td><td>" + (l.type === "fut" && l.spot ? AX.price(l.spot) : "—") + "</td><td>" + fund + "</td><td>" + AX.vol(l.vol24h) + "</td></tr>";
     }).join("");
     $("ptb").innerHTML = rows; tick();
-    $("fees").textContent = "taker " + d.long.fee + "% / " + d.short.fee + "%";
-    $("exs").innerHTML = [d.long, d.short].map(function(l, i){
+    $("exs").innerHTML = [d.long, d.short].map(function(l){
       var bid = l.bids[0] ? l.bids[0][0] : 0, ask = l.asks[0] ? l.asks[0][0] : 0, mid = (bid + ask) / 2;
-      var bs = mid ? (ask - bid) / mid * 100 : 0;
-      var buy = i === 0, side = buy ? l.asks : l.bids, q10 = mid ? 10000 / mid : 0, w = walk(side, q10);
-      var sl = w.got >= q10 * .999 && side[0] ? Math.abs(w.avg - side[0][0]) / side[0][0] * 100 : null;
-      return '<div class="exc"><b>' + AX.xt(l.ex) + AX.exName(l.ex) + "</b>" +
-        "<div><span>24h volume</span><span>" + (l.vol24h ? AX.vol(l.vol24h) : "—") + "</span></div>" +
-        "<div><span>Book spread</span><span>" + bs.toFixed(3) + "%</span></div>" +
-        "<div><span>Slippage $10k</span><span>" + (sl == null ? "n/a" : sl.toFixed(3) + "%") + "</span></div>" +
-        "<div><span>Taker fee</span><span>" + l.fee + "%</span></div></div>";
+      var bs = mid ? (ask - bid) / mid * 100 : 0, url = AX.exUrl(l.ex, l.type, sym);
+      var fr = l.type === "fut" ? '<span class="' + (l.rate > 0 ? "dn" : l.rate < 0 ? "up" : "") + '">' + sgn(l.rate, 4) + "</span>" : "—";
+      return '<div class="exc"><b><a class="xl" href="' + url + '" target="_blank" rel="noopener">' + AX.xt(l.ex) + '<span class="n">' + AX.esc(AX.exName(l.ex)) + "</span></a></b>" +
+        "<div><span>24h volume</span><span>" + AX.vol(l.vol24h) + "</span></div>" +
+        "<div><span>Funding</span><span>" + fr + "</span></div>" +
+        "<div><span>Interval</span><span>" + (l.type === "fut" ? l.hours + "h" : "—") + "</span></div>" +
+        "<div><span>Next payout</span><span>" + (l.type === "fut" ? '<span data-next="' + (l.next || "") + '">—</span>' : "—") + "</span></div>" +
+        "<div><span>Book spread</span><span>" + bs.toFixed(3) + "%</span></div></div>";
     }).join("");
   }
 
@@ -227,9 +248,10 @@
     $("bkS" + i).textContent = i === 0 ? "BUY at ask" : "SELL at bid";
   }
 
-  /* ── calculator + simulated position ── */
+  /* ── calculator + simulated position (all numbers recomputed from the live books on every poll) ── */
   var unit = "usd", PK = "axion-pos:" + KEY, pos = null;
   try { pos = JSON.parse(localStorage.getItem(PK) || "null"); } catch (e) {}
+  function savePos(){ try { if (pos) localStorage.setItem(PK, JSON.stringify(pos)); else localStorage.removeItem(PK); } catch (e) {} }
   AX.seg($("cUnit"), function(v){ unit = v; calc(); });
   $("cAmt").addEventListener("input", calc);
   function qtyIn(d){
@@ -238,50 +260,81 @@
     if (unit === "coin") return a;
     var p = d.long.asks[0] ? d.long.asks[0][0] : 0; return p ? a / p : 0;
   }
+  function fmtCoins(q){ return q >= 100 ? AX.num(q, 0) : q >= 1 ? q.toFixed(2) : AX.plain(q); }
+  function dur(ms){ if (ms == null || ms < 0) return "—"; var m = Math.floor(ms / 60000), h = Math.floor(m / 60); return h ? h + "h " + (m % 60) + "m" : m + "m " + Math.floor(ms % 60000 / 1000) + "s"; }
+  function money(v, sign){ var a = Math.abs(v), t = "$" + (a >= 100 ? AX.num(a, 2) : a.toFixed(a >= 1 ? 2 : 4)); return v < 0 ? "-" + t : (sign ? "+" : "") + t; }
+  function row(k, v, c){ return "<div><span>" + AX.esc(k) + "</span><span" + (c ? ' class="' + c + '"' : "") + ">" + v + "</span></div>"; }
+  function fundLine(l, role, qty){
+    if (l.type !== "fut") return { v: 0, html: row("Funding · " + role + " " + AX.exName(l.ex), "—") };
+    var v = (role === "Long" ? -1 : 1) * l.rate / 100 * qty * l.price;
+    return { v: v, html: row("Funding · " + role + " " + AX.exName(l.ex), '<span class="' + cls(v) + '">' + money(v, true) + "</span> <span class=\"mu\">in " + dur(l.next ? l.next - Date.now() : null) + "</span>") };
+  }
   function calc(){
     var d = D; if (!d) return;
-    var t = tops(d), q = qtyIn(d);
-    var warn = "";
-    if (!t || !(q > 0)){ ["cEntry","cPnl","cExit"].forEach(function(i){ $(i).textContent = "—"; }); $("cKv").innerHTML = ""; $("cWarn").textContent = q > 0 ? "" : "Enter a quantity (coins) or position size (USD)."; return; }
-    var lb = walk(d.long.asks, q), ss = walk(d.short.bids, q), ls = walk(d.long.bids, q), sb = walk(d.short.asks, q);
-    var got = Math.min(lb.got, ss.got, ls.got, sb.got);
-    if (got < q * .999) warn = "Not enough depth in the loaded order book: " + AX.plain(got) + " of " + AX.plain(q) + " " + sym + " would fill. Results use the available depth.";
-    var qq = got || q;
-    var entry = lb.avg ? (ss.avg - lb.avg) / lb.avg * 100 : 0, exitS = sb.avg ? (ls.avg - sb.avg) / sb.avg * 100 : 0;
-    var feeOpen = qq * (lb.avg * d.long.fee + ss.avg * d.short.fee) / 100, feeClose = qq * (ls.avg * d.long.fee + sb.avg * d.short.fee) / 100;
-    var gross = (ss.avg - lb.avg) * qq;
-    var pnl;
-    if (pos){ pnl = (pos.shortAvg - sb.avg + ls.avg - pos.longAvg) * pos.qty - pos.feeOpen - pos.qty * (ls.avg * d.long.fee + sb.avg * d.short.fee) / 100; }
-    else pnl = (ss.avg - lb.avg - (sb.avg - ls.avg)) * qq - feeOpen - feeClose;
-    $("cEntry").textContent = sgn(entry); $("cEntry").className = "v " + cls(entry);
-    $("cExit").textContent = sgn(exitS); $("cExit").className = "v " + cls(exitS);
-    $("cPnl").textContent = usd(pnl); $("cPnl").className = "v " + cls(pnl);
-    var fl = d.long.type === "fut" ? -d.long.rate / 100 * qq * d.long.price : 0, fs = d.short.type === "fut" ? d.short.rate / 100 * qq * d.short.price : 0;
-    var kv = [
-      ["Position", AX.plain(qq) + " " + sym + " · " + usd(qq * lb.avg)],
-      ["Avg buy · " + AX.exName(d.long.ex), AX.plain(lb.avg)],
-      ["Avg sell · " + AX.exName(d.short.ex), AX.plain(ss.avg)],
-      ["Price gap", usd(gross)],
-      ["Fees open + close (est.)", usd(-(feeOpen + feeClose))],
-      ["Next funding · long", d.long.type === "fut" ? usd(fl) : "—"],
-      ["Next funding · short", d.short.type === "fut" ? usd(fs) : "—"]
-    ];
-    if (pos) kv.unshift(["Opened", new Date(pos.ts).toLocaleString() + " · spread " + sgn(pos.spread)]);
-    $("cKv").innerHTML = kv.map(function(r){ return "<div><span>" + AX.esc(r[0]) + "</span><span>" + AX.esc(r[1]) + "</span></div>"; }).join("");
+    var t = tops(d);
+    $("cBtnsA").hidden = !!pos; $("cBtnsB").hidden = !pos;
+    $("cMode").textContent = pos ? "position open" : "live books";
+    if (!t){ return; }
+    if (pos){
+      var q = pos.qty, ls = walk(d.long.bids, q), sb = walk(d.short.asks, q), lb = walk(d.long.asks, q), ss = walk(d.short.bids, q);
+      var cur = lb.avg ? (ss.avg - lb.avg) / lb.avg * 100 : 0;
+      var closeFee = q * (ls.avg * d.long.fee + sb.avg * d.short.fee) / 100;
+      var pnl = (pos.shortAvg - sb.avg + ls.avg - pos.longAvg) * q - pos.feeOpen - closeFee;
+      var pnlConv = (pos.shortAvg - pos.longAvg) * q - pos.feeOpen - closeFee;
+      var nl = pos.longAvg * q, ns = pos.shortAvg * q;
+      var fl = fundLine(d.long, "Long", q), fs = fundLine(d.short, "Short", q);
+      $("cK1").textContent = "Current spread"; $("cK2").textContent = "PNL"; $("cK3").textContent = "PNL at spread close";
+      $("cEntry").textContent = sgn(cur, 4); $("cEntry").className = "v " + (cur >= 0 ? "acc" : "dn");
+      $("cPnl").textContent = money(pnl, true); $("cPnl").className = "v " + cls(pnl);
+      $("cExit").textContent = money(pnlConv, true); $("cExit").className = "v " + cls(pnlConv);
+      $("cKv").innerHTML = row("Entry prices", "$" + AX.plain(pos.longAvg) + " / $" + AX.plain(pos.shortAvg)) +
+        row("Position size", fmtCoins(q * 2) + " coins / " + money(nl + ns) + ' <span class="' + cls(ns - nl) + '">(' + money(ns - nl, true) + ")</span>") +
+        row("Position size · Long", fmtCoins(q) + " coins / " + money(nl)) +
+        row("Position size · Short", fmtCoins(q) + " coins / " + money(ns)) +
+        row("Opened", new Date(pos.ts).toLocaleString()) +
+        row("Open spread", sgn(pos.spread, 4), "acc") +
+        row("Price spread", money((pos.shortAvg - pos.longAvg) * q, true), cls(pos.shortAvg - pos.longAvg)) +
+        row("Funding", '<span class="' + cls(fl.v + fs.v) + '">' + money(fl.v + fs.v, true) + "</span>") + fl.html + fs.html +
+        row("Fees", '<span class="dn">' + money(-(pos.feeOpen + closeFee)) + "</span>");
+      $("cWarn").textContent = "";
+      return;
+    }
+    /* no position: preview for the entered size */
+    var q0 = qtyIn(d), warn = "";
+    $("cK1").textContent = "Open spread"; $("cK2").textContent = "PNL (close now)"; $("cK3").textContent = "Close spread";
+    if (!(q0 > 0)){ ["cEntry","cPnl","cExit"].forEach(function(i){ $(i).textContent = "—"; $(i).className = "v"; }); $("cKv").innerHTML = ""; $("cWarn").textContent = "Enter a quantity (coins) or position size (USD)."; calc.last = null; return; }
+    var lb0 = walk(d.long.asks, q0), ss0 = walk(d.short.bids, q0), ls0 = walk(d.long.bids, q0), sb0 = walk(d.short.asks, q0);
+    var got = Math.min(lb0.got, ss0.got, ls0.got, sb0.got);
+    if (got < q0 * .999) warn = "Not enough depth in the loaded order book: " + fmtCoins(got) + " of " + fmtCoins(q0) + " " + sym + " would fill. Results use the available depth.";
+    var qq = got || q0;
+    var entry = lb0.avg ? (ss0.avg - lb0.avg) / lb0.avg * 100 : 0, exitS = sb0.avg ? (ls0.avg - sb0.avg) / sb0.avg * 100 : 0;
+    var feeOpen = qq * (lb0.avg * d.long.fee + ss0.avg * d.short.fee) / 100, feeClose = qq * (ls0.avg * d.long.fee + sb0.avg * d.short.fee) / 100;
+    var gap = (ss0.avg - lb0.avg) * qq, pnl0 = (ss0.avg - lb0.avg - (sb0.avg - ls0.avg)) * qq - feeOpen - feeClose;
+    $("cEntry").textContent = sgn(entry, 4); $("cEntry").className = "v " + cls(entry);
+    $("cExit").textContent = sgn(exitS, 4); $("cExit").className = "v " + cls(exitS);
+    $("cPnl").textContent = money(pnl0, true); $("cPnl").className = "v " + cls(pnl0);
+    var fl0 = fundLine(d.long, "Long", qq), fs0 = fundLine(d.short, "Short", qq);
+    $("cKv").innerHTML = row("Position", fmtCoins(qq) + " " + AX.esc(sym) + " · " + money(qq * lb0.avg)) +
+      row("Avg buy · " + AX.exName(d.long.ex), "$" + AX.plain(lb0.avg)) + row("Avg sell · " + AX.exName(d.short.ex), "$" + AX.plain(ss0.avg)) +
+      row("Price gap", money(gap, true), cls(gap)) + row("Fees open + close (est.)", '<span class="dn">' + money(-(feeOpen + feeClose)) + "</span>") + fl0.html + fs0.html;
     $("cWarn").textContent = warn;
-    $("cOpen").hidden = !!pos; $("cClose").hidden = !pos;
-    calc.last = { lb: lb, ss: ss, qq: qq, feeOpen: feeOpen, entry: entry };
+    calc.last = { lb: lb0, ss: ss0, qq: qq, feeOpen: feeOpen, entry: entry, fee: feeOpen };
   }
   $("cOpen").addEventListener("click", function(){
     var c = calc.last; if (!c || !c.qq) return;
     pos = { qty: c.qq, longAvg: c.lb.avg, shortAvg: c.ss.avg, feeOpen: c.feeOpen, spread: c.entry, ts: Date.now() };
-    try { localStorage.setItem(PK, JSON.stringify(pos)); } catch (e) {}
-    AX.toast("Position opened (simulation)"); calc();
+    savePos(); AX.toast("Position opened (simulation)"); calc();
+  });
+  $("cAdd").addEventListener("click", function(){
+    var d = D; if (!d || !pos) return; var q = qtyIn(d); if (!(q > 0)) { AX.toast("Enter the size to add", false); return; }
+    var lb = walk(d.long.asks, q), ss = walk(d.short.bids, q), g = Math.min(lb.got, ss.got); if (!g) return;
+    var n = pos.qty + g;
+    pos.longAvg = (pos.longAvg * pos.qty + lb.avg * g) / n; pos.shortAvg = (pos.shortAvg * pos.qty + ss.avg * g) / n;
+    pos.feeOpen += g * (lb.avg * d.long.fee + ss.avg * d.short.fee) / 100; pos.qty = n;
+    pos.spread = (pos.shortAvg - pos.longAvg) / pos.longAvg * 100; savePos(); AX.toast("Position increased"); calc();
   });
   $("cClose").addEventListener("click", function(){
-    var pnl = $("cPnl").textContent; pos = null;
-    try { localStorage.removeItem(PK); } catch (e) {}
-    AX.toast("Position closed · PNL " + pnl); calc();
+    var p = $("cPnl").textContent; pos = null; savePos(); AX.toast("Position closed · PNL " + p); calc();
   });
 
   /* ── countdown ── */

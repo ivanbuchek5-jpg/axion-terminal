@@ -120,13 +120,15 @@
     if (n < 100) return n.toFixed(3);
     return AX.num(n, 2);
   };
-  AX.vol = function (n) {
+  AX.vol = function (n) { /* compact, truncated: 460.99k · 1.23M · 4.56B */
     n = Number(n);
-    if (!n) return "—";
-    if (n >= 1e12) return "$" + (n / 1e12).toFixed(2) + "T";
-    if (n >= 1e9) return "$" + (n / 1e9).toFixed(2) + "B";
-    if (n >= 1e6) return "$" + (n / 1e6).toFixed(2) + "M";
-    return "$" + n.toFixed(0);
+    if (!n || n < 1) return "—";
+    var f = function (v) { return (Math.floor(v * 100) / 100).toFixed(2); };
+    if (n >= 1e12) return "$" + f(n / 1e12) + "T";
+    if (n >= 1e9) return "$" + f(n / 1e9) + "B";
+    if (n >= 1e6) return "$" + f(n / 1e6) + "M";
+    if (n >= 1e3) return "$" + f(n / 1e3) + "k";
+    return "$" + f(n);
   };
   AX.pct = function (n, d) {
     n = Number(n);
@@ -188,7 +190,42 @@
     mexc: { n: "MEXC", c: "#1B7BE0", t: "MX" }, gate: { n: "Gate", c: "#E24B4B", t: "GT" }
   };
   AX.exName = function (k) { return (AX.EX[k] || { n: k }).n; };
-  AX.xt = function (k) { var e = AX.EX[k] || { c: "#555", t: "?" }; return '<span class="xt" style="background:' + e.c + '">' + e.t + "</span>"; };
+  var XD = { binance: ["binance.com", 270], aster: ["asterdex.com", 0], okx: ["okx.com", 294], bingx: ["bingx.com", 1064], mexc: ["mexc.com", 544], gate: ["gate.com", 302] };
+  /* logo chain: your own file static/ex/<key>.png → site favicon → CoinMarketCap exchange logo → coloured letters tile */
+  function xsrc(k, n) {
+    var d = XD[k]; if (!d) return null;
+    if (n === 0) return "ex/" + k + ".png?v=12";
+    if (n === 1) return "https://www.google.com/s2/favicons?domain=" + d[0] + "&sz=128";
+    if (n === 2 && d[1]) return "https://s2.coinmarketcap.com/static/img/exchanges/64x64/" + d[1] + ".png";
+    return null;
+  }
+  AX.xt = function (k) {
+    var e = AX.EX[k] || { c: "#555", t: "?" }, u = xsrc(k, 0);
+    return '<span class="xt" style="--xc:' + e.c + '"><b>' + e.t + "</b>" + (u ? '<img data-k="' + AX.esc(k) + '" data-n="0" src="' + u + '" alt="" referrerpolicy="no-referrer" decoding="async">' : "") + "</span>";
+  };
+  /* exchange page of this exact token (type: "fut" | "spot") */
+  AX.exUrl = function (ex, type, base) {
+    var b = AX.base(base), f = type === "fut";
+    var U = {
+      binance: f ? "https://www.binance.com/en/futures/" + b + "USDT" : "https://www.binance.com/en/trade/" + b + "_USDT?type=spot",
+      aster: f ? "https://www.asterdex.com/en/futures/v1/" + b + "USDT" : "https://www.asterdex.com/en/spot/" + b + "USDT",
+      okx: f ? "https://www.okx.com/trade-swap/" + b.toLowerCase() + "-usdt-swap" : "https://www.okx.com/trade-spot/" + b.toLowerCase() + "-usdt",
+      bingx: f ? "https://bingx.com/en/perpetual/" + b + "-USDT/" : "https://bingx.com/en/spot/" + b + "USDT/",
+      mexc: f ? "https://futures.mexc.com/exchange/" + b + "_USDT" : "https://www.mexc.com/exchange/" + b + "_USDT",
+      gate: f ? "https://www.gate.io/futures/USDT/" + b + "_USDT" : "https://www.gate.io/trade/" + b + "_USDT"
+    };
+    return U[ex] || "#";
+  };
+  document.addEventListener("error", function (e) {
+    var im = e.target;
+    if (!im || im.tagName !== "IMG" || !im.parentNode || !im.parentNode.classList.contains("xt")) return;
+    var k = im.getAttribute("data-k"), n = (+im.getAttribute("data-n") || 0) + 1, u = xsrc(k, n);
+    if (u) { im.setAttribute("data-n", n); im.src = u; } else im.remove();
+  }, true);
+  document.addEventListener("load", function (e) {
+    var im = e.target;
+    if (im && im.tagName === "IMG" && im.parentNode && im.parentNode.classList.contains("xt")) im.parentNode.classList.add("has");
+  }, true);
   /* 3723000 → "01:02:03" */
   AX.hms = function (ms) {
     if (ms == null || isNaN(ms)) return "—";
@@ -497,7 +534,7 @@
     var top = document.createElement("div");
     top.innerHTML =
       '<header class="nav" id="nav"><div class="nav-in">' +
-      '<a class="brand" href="index.html" aria-label="AXION TERMINAL"><span class="logo"><img src="logo.png?v=11" alt="" decoding="sync"></span>' +
+      '<a class="brand" href="index.html" aria-label="AXION TERMINAL"><span class="logo"><img src="logo.png?v=12" alt="" decoding="sync"></span>' +
       '<span class="brand-t"><b>AXION</b><i>TERMINAL</i></span></a>' +
       '<nav class="nav-links" id="navLinks" aria-label="Main">' +
       NAV.map(function (n) { return '<a href="' + n[1] + '"' + (n[0] === page ? ' aria-current="page"' : "") + ">" + n[2] + "</a>"; }).join("") + "</nav>" +

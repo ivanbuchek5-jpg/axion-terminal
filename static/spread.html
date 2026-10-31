@@ -10,7 +10,7 @@
 <script>(function(){var t=null;try{t=localStorage.getItem('axion-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#E9EAEC':'#25272D')})()</script>
 <script>(function(){var d=document.documentElement;try{var t=+sessionStorage.getItem('axion-pt');sessionStorage.removeItem('axion-pt');if(t&&Date.now()-t<10000&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){d.classList.add('pt-in');setTimeout(function(){d.classList.remove('pt-in')},4500)}}catch(e){}})()</script>
 <style>html{background:#25272D}html[data-theme=light]{background:#E9EAEC}html.pt-in{background:#0E0F11}html:not(.css) body{visibility:hidden}</style>
-<link rel="stylesheet" href="axion.css?v=11" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
+<link rel="stylesheet" href="axion.css?v=12" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
 <script>setTimeout(function(){document.documentElement.classList.add("css")},3000)</script>
 </head>
 <body>
@@ -58,8 +58,8 @@
 </main>
 </div>
 
-<script src="autocomplete.js?v=11"></script>
-<script src="shared.js?v=11"></script>
+<script src="autocomplete.js?v=12"></script>
+<script src="shared.js?v=12"></script>
 <script>
 (function(){
   AX.init("spread");
@@ -149,10 +149,9 @@
 
   /* ── render ── */
   var rows = [], first = true, tsAt = 0, loading = false;
-  function legHtml(l, kind){
+  function legHtml(l, kind, sym){
     var arrow = kind === "l" ? "up" : "down";
-    return '<div class="leg"><span class="ar ' + kind + '">' + AX.icon(arrow) + "</span>" + AX.xt(l.ex) + '<span class="nm">' + AX.esc(AX.exName(l.ex)) + "</span>" +
-      (l.type === "spot" ? '<span class="tg">SPOT</span>' : "") + '<span class="px">' + AX.plain(l.price) + "</span></div>";
+    return '<a class="leg" data-ext target="_blank" rel="noopener" href="' + AX.exUrl(l.ex, l.type, sym) + '" title="Open ' + AX.esc(sym) + " on " + AX.esc(AX.exName(l.ex)) + '"><span class="ar ' + kind + '">' + AX.icon(arrow) + "</span>" + AX.xt(l.ex) + '<span class="nm">' + AX.esc(AX.exName(l.ex)) + '</span><span class="tg' + (l.type === "spot" ? " s" : "") + '">' + (l.type === "spot" ? "SPOT" : "FUTURES") + '</span><span class="px">' + AX.plain(l.price) + "</span></a>";
   }
   function fundHtml(l){
     if (l.type === "spot") return '<div class="fl mu">—</div>';
@@ -165,16 +164,22 @@
     if (!f.length){ body.innerHTML = AX.empty("empty", st.ex.length ? "No bundles match your filters" : "Select at least one exchange"); document.getElementById("foot").textContent = "0 bundles"; return; }
     body.innerHTML = f.map(function(r, i){
       var href = "pair.html?symbol=" + encodeURIComponent(r.symbol) + "&long=" + r.long.ex + ":" + r.long.type + "&short=" + r.short.ex + ":" + r.short.type;
-      return '<a class="trow' + (first && i < 14 ? " fresh" : "") + '" style="--d:' + i + '" href="' + href + '">' +
+      return '<div class="trow' + (first && i < 14 ? " fresh" : "") + '" style="--d:' + i + '" role="link" tabindex="0" data-href="' + href + '">' +
         '<div class="cc coin"><span class="ico">' + AX.ico(r.symbol) + "</span><b>" + AX.esc(r.symbol) + "</b></div>" +
-        '<div class="dm lg">' + legHtml(r.long, "l") + legHtml(r.short, "s") + "</div>" +
+        '<div class="dm lg">' + legHtml(r.long, "l", r.symbol) + legHtml(r.short, "s", r.symbol) + "</div>" +
         '<div class="dm fg">' + fundHtml(r.long) + fundHtml(r.short) + "</div>" +
-        '<div class="pp"><div class="r">' + chip(r.fund) + '</div><div class="r">' + chip(r.spread) + "</div></div></a>";
+        '<div class="pp"><div class="r">' + chip(r.fund) + '</div><div class="r">' + chip(r.spread) + "</div></div></div>";
     }).join("");
     first = false;
     document.getElementById("foot").textContent = f.length + " of " + total + " bundles · " + (st.ex.length === ALL.length ? "all exchanges" : st.ex.map(AX.exName).join(", "));
     tick();
   }
+
+  body.addEventListener("click", function(e){
+    if (e.target.closest("a[data-ext]") || e.metaKey || e.ctrlKey) return;
+    var r = e.target.closest(".trow[data-href]"); if (r) AX.navigate(r.getAttribute("data-href"));
+  });
+  body.addEventListener("keydown", function(e){ if (e.key === "Enter"){ var r = e.target.closest(".trow[data-href]"); if (r) AX.navigate(r.getAttribute("data-href")); } });
 
   /* countdown timers (no re-render) */
   function tick(){

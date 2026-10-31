@@ -6,6 +6,7 @@ Public exchange endpoints only. Registered from app.py via init().
 """
 import time
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from flask import jsonify, request
 
@@ -53,6 +54,33 @@ def _cached(key, ttl, fn):
             _cache[key] = (now, val)
         return val
     return hit[1] if hit else val  # stale beats empty
+
+
+_refreshing = set()
+
+
+def _swr(key, ttl, fn, default=None):
+    """stale-while-revalidate: always answer instantly from cache, refresh in the background."""
+    now = time.time()
+    with _lock:
+        hit = _cache.get(key)
+    if hit and now - hit[0] < ttl:
+        return hit[1]
+    if not hit and default is None:
+        return _cached(key, ttl, fn)
+    if key not in _refreshing:
+        _refreshing.add(key)
+
+        def run():
+            try:
+                v = fn()
+                if v:
+                    with _lock:
+                        _cache[key] = (time.time(), v)
+            finally:
+                _refreshing.discard(key)
+        threading.Thread(target=run, daemon=True).start()
+    return hit[1] if hit else default
 
 
 def _next_aligned(hours):
@@ -179,8 +207,8 @@ def api_arb():
     q = (request.args.get("q") or "").upper().replace("/", "").replace("USDT", "")
     limit = max(10, min(500, int(_f(request.args.get("limit"), 150))))
 
-    fut = _cached("fut", 4, _futures) or {}
-    spot = _cached("spot", 6, _spot) if mode.startswith("sf") else {}
+    fut = _swr("fut", 4, _futures) or {}
+    spot = _swr("spot", 6, _spot) if mode.startswith("sf") else {}
     rows = []
     bases = set()
     for e in exs:
@@ -322,7 +350,7 @@ def _fetch_vol(ex, typ, b):
     S = b + "USDT"
     try:
         if typ == "spot":
-            s = _cached("spot", 6, _spot) or {}
+            s = _swr("spot", 6, _spot) or {}
             return _f(((s.get(ex) or {}).get(b) or {}).get("vol"))
         if ex in ("binance", "aster"):
             host = "fapi.binance.com" if ex == "binance" else "fapi.asterdex.com"
@@ -357,12 +385,13 @@ def api_pair():
     legs = [_parse_leg(request.args.get("long", "")), _parse_leg(request.args.get("short", ""))]
     if not b or not all(legs):
         return jsonify({"error": "bad params"}), 400
+    fut = _swr("fut", 4, _futures) or {}
+    spot = _swr("spot", 6, _spot) or {}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        books = list(pool.map(lambda lg: _cached(f"bk_{lg[0]}_{lg[1]}_{b}", 0.6, lambda: _fetch_book(lg[0], lg[1], b)) or ([], []), legs))
     out = []
-    fut = _cached("fut", 4, _futures) or {}
-    spot = _cached("spot", 6, _spot) or {}
-    for ex, typ in legs:
-        bids, asks = _cached(f"bk_{ex}_{typ}_{b}", 0.7, lambda: _fetch_book(ex, typ, b)) or ([], [])
-        vol = _cached(f"vol_{ex}_{typ}_{b}", 30, lambda: _fetch_vol(ex, typ, b))
+    for (ex, typ), (bids, asks) in zip(legs, books):
+        vol = _swr(f"vol_{ex}_{typ}_{b}", 30, lambda ex=ex, typ=typ: _fetch_vol(ex, typ, b) or 0.0001, default=0.0)
         d = (fut if typ == "fut" else spot).get(ex, {}).get(b) or {}
         leg = {"ex": ex, "type": typ, "bids": bids, "asks": asks, "vol24h": vol,
                "price": d.get("price", 0), "fee": FEES[ex][typ],
@@ -374,7 +403,6 @@ def api_pair():
 
 
 # ── history: 1-minute closes for both legs, aligned → entry/exit spread series ─────────────────────────────────
-from concurrent.futures import ThreadPoolExecutor
 
 
 def _klines(ex, typ, b, minutes):
@@ -462,10 +490,10 @@ def api_hist():
     minutes = max(30, min(1440, int(_f(request.args.get("minutes"), 1440))))
     ser = [_cached(f"kl_{ex}_{typ}_{b}_{minutes}", 45, lambda ex=ex, typ=typ: _klines(ex, typ, b, minutes)) or {} for ex, typ in legs]
     common = sorted(set(ser[0]) & set(ser[1]))
-    t, en, ex_ = [], [], []
+    t, en, ex_, lp, sp = [], [], [], [], []
     for ts in common:
         L, S = ser[0][ts], ser[1][ts]
-        t.append(ts)
+        t.append(ts); lp.append(L); sp.append(S)
         en.append(round((S - L) / L * 100, 4))
         ex_.append(round((L - S) / S * 100, 4))
-    return jsonify({"t": t, "in": en, "out": ex_, "n": len(t), "got": [len(ser[0]), len(ser[1])]})
+    return jsonify({"t": t, "in": en, "out": ex_, "l": lp, "s": sp, "n": len(t), "got": [len(ser[0]), len(ser[1])]})
