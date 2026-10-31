@@ -10,7 +10,7 @@
 <script>(function(){var t=null;try{t=localStorage.getItem('axion-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#E9EAEC':'#25272D')})()</script>
 <script>(function(){var d=document.documentElement;try{var t=+sessionStorage.getItem('axion-pt');sessionStorage.removeItem('axion-pt');if(t&&Date.now()-t<10000&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){d.classList.add('pt-in');setTimeout(function(){d.classList.remove('pt-in')},4500)}}catch(e){}})()</script>
 <style>html{background:#25272D}html[data-theme=light]{background:#E9EAEC}html.pt-in{background:#0E0F11}html:not(.css) body{visibility:hidden}</style>
-<link rel="stylesheet" href="axion.css?v=10" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
+<link rel="stylesheet" href="axion.css?v=11" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
 <script>setTimeout(function(){document.documentElement.classList.add("css")},3000)</script>
 </head>
 <body>
@@ -40,12 +40,14 @@
     <div class="card" style="min-width:0">
       <div class="ctl">
         <div class="seg" id="ivSeg" style="min-width:150px"><button data-v="1000" class="on">1s</button><button data-v="2000">2s</button><button data-v="5000">5s</button></div>
+        <div class="seg" id="rgSeg" style="min-width:170px"><button data-v="60">1h</button><button data-v="360">6h</button><button data-v="1440" class="on">24h</button></div>
         <div class="legend"><span><i style="background:var(--accent-text)"></i>Entry (open)</span><span><i style="background:var(--neg)"></i>Exit (close)</span></div>
         <span class="sp"></span>
         <button class="btn sm" id="bFit" type="button">Fit</button>
         <button class="btn sm" id="bClr" type="button">Clear</button>
       </div>
       <div id="sp-chart"></div>
+      <div class="mu" id="hNote" style="padding:8px 16px 12px;font:500 .6875rem var(--mono)"></div>
     </div>
 
     <div style="display:grid;gap:14px;align-content:start;min-width:0">
@@ -80,9 +82,9 @@
 </main>
 </div>
 
-<script src="lwc.js?v=10"></script>
-<script src="autocomplete.js?v=10"></script>
-<script src="shared.js?v=10"></script>
+<script src="lwc.js?v=11"></script>
+<script src="autocomplete.js?v=11"></script>
+<script src="shared.js?v=11"></script>
 <script>
 (function(){
   AX.init("spread", { ticker: false });
@@ -134,7 +136,6 @@
     var o = { lineWidth: 2, priceLineVisible: true, lastValueVisible: true, priceFormat: { type: "custom", formatter: function(v){ return v.toFixed(3) + "%"; }, minMove: .0001 } };
     sE = chart.addLineSeries(Object.assign({ color: c.up }, o));
     sX = chart.addLineSeries(Object.assign({ color: c.dn }, o));
-    try { var sv = JSON.parse(sessionStorage.getItem("axion-sp-" + KEY) || "null"); if (sv){ hist = sv; sE.setData(hist.e); sX.setData(hist.x); } } catch (e) {}
     chart.timeScale().fitContent();
   }
   function recolor(){
@@ -150,20 +151,40 @@
     var a = hist.e[hist.e.length - 1];
     if (a && a.time > t) return;
     if (a && a.time === t){ a.value = en; hist.x[hist.x.length - 1].value = ex; }
-    else { hist.e.push({ time: t, value: en }); hist.x.push({ time: t, value: ex }); if (hist.e.length > 4000){ hist.e.shift(); hist.x.shift(); } }
+    else { hist.e.push({ time: t, value: en }); hist.x.push({ time: t, value: ex }); if (hist.e.length > 12000){ hist.e.shift(); hist.x.shift(); } }
     sE.update({ time: t, value: en }); sX.update({ time: t, value: ex });
-    if (Date.now() - lastSave > 4000){ lastSave = Date.now(); try { sessionStorage.setItem("axion-sp-" + KEY, JSON.stringify(hist)); } catch (e) {} }
   }
   AX.seg($("ivSeg"), function(v){ ms = +v; });
+  /* previous 24h: 1-minute closes of both legs from the exchanges → the "tear and re-join" history */
+  var rg = 1440, histOk = false;
+  function applyRange(){
+    if (!chart || !hist.e.length) return;
+    var last = hist.e[hist.e.length - 1].time;
+    try { chart.timeScale().setVisibleRange({ from: last - rg * 60, to: last + 60 }); } catch (e) {}
+  }
+  AX.seg($("rgSeg"), function(v){ rg = +v; applyRange(); });
+  function loadHist(){
+    fetch("/api/hist?symbol=" + encodeURIComponent(sym) + "&long=" + encodeURIComponent(LG) + "&short=" + encodeURIComponent(SH) + "&minutes=1440", { cache: "no-store" })
+      .then(function(r){ return r.json(); }).then(function(j){
+        if (!j || !j.t || !j.t.length){ $("hNote").textContent = "No history from the exchanges for this pair — chart fills live."; return; }
+        var live = hist; // points collected while history was loading
+        var e = [], x = [], first = live.e.length ? live.e[0].time : Infinity;
+        for (var i = 0; i < j.t.length; i++){ if (j.t[i] >= first) break; e.push({ time: j.t[i], value: j["in"][i] }); x.push({ time: j.t[i], value: j.out[i] }); }
+        hist = { e: e.concat(live.e), x: x.concat(live.x) };
+        sE.setData(hist.e); sX.setData(hist.x); histOk = true;
+        $("hNote").textContent = "History: 1-min candles · " + j.n + " points";
+        applyRange();
+      }).catch(function(){ $("hNote").textContent = "History unavailable — chart fills live."; });
+  }
   $("bFit").addEventListener("click", function(){ if (chart) chart.timeScale().fitContent(); });
-  $("bClr").addEventListener("click", function(){ hist = { e: [], x: [] }; if (sE){ sE.setData([]); sX.setData([]); } try { sessionStorage.removeItem("axion-sp-" + KEY); } catch (e) {} });
+  $("bClr").addEventListener("click", function(){ hist = { e: [], x: [] }; if (sE){ sE.setData([]); sX.setData([]); } loadHist(); });
 
   /* ── header + table + exchange cards ── */
   function renderHead(d){
     var t = tops(d); if (!t) return;
-    var en = (t.bS - t.aL) / t.aL * 100, ex = (t.aS - t.bL) / t.bL * 100;
+    var en = (t.bS - t.aL) / t.aL * 100, ex = (t.bL - t.aS) / t.aS * 100;
     $("vEntry").textContent = sgn(en); $("vEntry").className = "v " + cls(en);
-    $("vExit").textContent = sgn(ex); $("vExit").className = "v " + cls(-ex);
+    $("vExit").textContent = sgn(ex); $("vExit").className = "v " + cls(ex);
     var per8 = function(l){ return l.type === "fut" ? l.rate / l.hours * 8 : 0; };
     var fn = per8(d.short) - per8(d.long);
     $("vFund").textContent = sgn(fn, 4); $("vFund").className = "v " + cls(fn);
@@ -226,14 +247,14 @@
     var got = Math.min(lb.got, ss.got, ls.got, sb.got);
     if (got < q * .999) warn = "Not enough depth in the loaded order book: " + AX.plain(got) + " of " + AX.plain(q) + " " + sym + " would fill. Results use the available depth.";
     var qq = got || q;
-    var entry = lb.avg ? (ss.avg - lb.avg) / lb.avg * 100 : 0, exitS = ls.avg ? (sb.avg - ls.avg) / ls.avg * 100 : 0;
+    var entry = lb.avg ? (ss.avg - lb.avg) / lb.avg * 100 : 0, exitS = sb.avg ? (ls.avg - sb.avg) / sb.avg * 100 : 0;
     var feeOpen = qq * (lb.avg * d.long.fee + ss.avg * d.short.fee) / 100, feeClose = qq * (ls.avg * d.long.fee + sb.avg * d.short.fee) / 100;
     var gross = (ss.avg - lb.avg) * qq;
     var pnl;
     if (pos){ pnl = (pos.shortAvg - sb.avg + ls.avg - pos.longAvg) * pos.qty - pos.feeOpen - pos.qty * (ls.avg * d.long.fee + sb.avg * d.short.fee) / 100; }
     else pnl = (ss.avg - lb.avg - (sb.avg - ls.avg)) * qq - feeOpen - feeClose;
     $("cEntry").textContent = sgn(entry); $("cEntry").className = "v " + cls(entry);
-    $("cExit").textContent = sgn(exitS); $("cExit").className = "v " + cls(-exitS);
+    $("cExit").textContent = sgn(exitS); $("cExit").className = "v " + cls(exitS);
     $("cPnl").textContent = usd(pnl); $("cPnl").className = "v " + cls(pnl);
     var fl = d.long.type === "fut" ? -d.long.rate / 100 * qq * d.long.price : 0, fs = d.short.type === "fut" ? d.short.rate / 100 * qq * d.short.price : 0;
     var kv = [
@@ -283,6 +304,7 @@
     .then(function(){ busy = false; timer = setTimeout(poll, Math.max(250, ms - (performance.now() - t0))); });
   }
   initChart();
+  loadHist();
   poll();
 })();
 </script>

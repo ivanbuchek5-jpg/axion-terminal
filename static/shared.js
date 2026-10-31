@@ -497,7 +497,7 @@
     var top = document.createElement("div");
     top.innerHTML =
       '<header class="nav" id="nav"><div class="nav-in">' +
-      '<a class="brand" href="index.html" aria-label="AXION TERMINAL"><span class="logo"><img src="logo.png?v=10" alt="" decoding="sync"></span>' +
+      '<a class="brand" href="index.html" aria-label="AXION TERMINAL"><span class="logo"><img src="logo.png?v=11" alt="" decoding="sync"></span>' +
       '<span class="brand-t"><b>AXION</b><i>TERMINAL</i></span></a>' +
       '<nav class="nav-links" id="navLinks" aria-label="Main">' +
       NAV.map(function (n) { return '<a href="' + n[1] + '"' + (n[0] === page ? ' aria-current="page"' : "") + ">" + n[2] + "</a>"; }).join("") + "</nav>" +

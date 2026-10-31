@@ -30,6 +30,7 @@ def init(app, safe_get, fetch_all_parallel, apis, bingx_params, parsers):
     _S.update(get=safe_get, many=fetch_all_parallel, apis=apis, bx=bingx_params, parsers=parsers)
     app.add_url_rule("/api/arb", "api_arb", api_arb)
     app.add_url_rule("/api/pair", "api_pair", api_pair)
+    app.add_url_rule("/api/hist", "api_hist", lambda: api_hist())
 
 
 def _f(x, d=0.0):
@@ -370,3 +371,101 @@ def api_pair():
             leg.update(rate=round(d.get("rate", 0), 5), hours=d.get("hours", 8), next=d.get("next"))
         out.append(leg)
     return jsonify({"symbol": b, "long": out[0], "short": out[1], "ts": int(time.time() * 1000)})
+
+
+# ── history: 1-minute closes for both legs, aligned → entry/exit spread series ─────────────────────────────────
+from concurrent.futures import ThreadPoolExecutor
+
+
+def _klines(ex, typ, b, minutes):
+    """{unix_minute_seconds: close} for the last `minutes` minutes, [] on failure."""
+    g = _S["get"]
+    S = b + "USDT"
+    out = {}
+    now = int(time.time())
+    try:
+        if ex in ("binance", "aster") or (ex == "mexc" and typ == "spot"):
+            if typ == "fut":
+                url = ["https://fapi.binance.com/fapi/v1/klines"] if ex == "binance" else ["https://fapi.asterdex.com/fapi/v1/klines"]
+                cap = 1500
+            elif ex == "mexc":
+                url, cap = ["https://api.mexc.com/api/v3/klines"], 1000
+            else:
+                url = (["https://data-api.binance.vision/api/v3/klines", "https://api.binance.com/api/v3/klines"]
+                       if ex == "binance" else ["https://sapi.asterdex.com/api/v3/klines"])
+                cap = 1000
+            end = None
+            left = minutes
+            while left > 0:
+                p = {"symbol": S, "interval": "1m", "limit": min(cap, left)}
+                if end:
+                    p["endTime"] = end
+                d = g(url, p)
+                if not isinstance(d, list) or not d:
+                    break
+                for k in d:
+                    out[int(k[0]) // 1000] = _f(k[4])
+                left -= len(d)
+                end = int(d[0][0]) - 1
+                if len(d) < 2:
+                    break
+        elif ex == "okx":
+            inst = f"{b}-USDT-SWAP" if typ == "fut" else f"{b}-USDT"
+            tasks = [("https://www.okx.com/api/v5/market/candles", {"instId": inst, "bar": "1m", "limit": 300})]
+            n = max(0, (minutes - 300 + 99) // 100)
+            for i in range(n):
+                after = (now - (300 + i * 100) * 60) * 1000
+                tasks.append(("https://www.okx.com/api/v5/market/history-candles", {"instId": inst, "bar": "1m", "limit": 100, "after": after}))
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                for d in pool.map(lambda t: g([t[0]], t[1]), tasks):
+                    for k in ((d or {}).get("data") or []):
+                        out[int(k[0]) // 1000] = _f(k[4])
+        elif ex == "bingx":
+            if typ == "fut":
+                d = g("https://open-api.bingx.com/openApi/swap/v3/quote/klines",
+                      {"symbol": f"{b}-USDT", "interval": "1m", "limit": min(1440, minutes), **_S["bx"]()})
+            else:
+                d = g("https://open-api.bingx.com/openApi/spot/v2/market/kline",
+                      {"symbol": f"{b}-USDT", "interval": "1m", "limit": min(1000, minutes), **_S["bx"]()})
+            for k in ((d or {}).get("data") or []):
+                if isinstance(k, dict):
+                    out[int(_f(k.get("time"))) // 1000] = _f(k.get("close"))
+                else:
+                    out[int(_f(k[0])) // 1000] = _f(k[4])
+        elif ex == "mexc":  # futures
+            d = g(f"https://contract.mexc.com/api/v1/contract/kline/{b}_USDT",
+                  {"interval": "Min1", "start": now - minutes * 60, "end": now})
+            x = (d or {}).get("data") or {}
+            for t, c in zip(x.get("time") or [], x.get("close") or []):
+                out[int(t)] = _f(c)
+        elif ex == "gate":
+            if typ == "fut":
+                d = g("https://api.gateio.ws/api/v4/futures/usdt/candlesticks",
+                      {"contract": f"{b}_USDT", "interval": "1m", "limit": min(2000, minutes)})
+                for k in (d if isinstance(d, list) else []):
+                    out[int(k.get("t"))] = _f(k.get("c"))
+            else:
+                d = g("https://api.gateio.ws/api/v4/spot/candlesticks",
+                      {"currency_pair": f"{b}_USDT", "interval": "1m", "limit": min(1000, minutes)})
+                for k in (d if isinstance(d, list) else []):
+                    out[int(k[0])] = _f(k[2])
+    except Exception as e:
+        print("[ERR] klines", ex, typ, b, e)
+    return {t // 60 * 60: c for t, c in out.items() if c > 0}
+
+
+def api_hist():
+    b = (request.args.get("symbol") or "").upper().replace("/", "").replace("USDT", "")
+    legs = [_parse_leg(request.args.get("long", "")), _parse_leg(request.args.get("short", ""))]
+    if not b or not all(legs):
+        return jsonify({"error": "bad params"}), 400
+    minutes = max(30, min(1440, int(_f(request.args.get("minutes"), 1440))))
+    ser = [_cached(f"kl_{ex}_{typ}_{b}_{minutes}", 45, lambda ex=ex, typ=typ: _klines(ex, typ, b, minutes)) or {} for ex, typ in legs]
+    common = sorted(set(ser[0]) & set(ser[1]))
+    t, en, ex_ = [], [], []
+    for ts in common:
+        L, S = ser[0][ts], ser[1][ts]
+        t.append(ts)
+        en.append(round((S - L) / L * 100, 4))
+        ex_.append(round((L - S) / S * 100, 4))
+    return jsonify({"t": t, "in": en, "out": ex_, "n": len(t), "got": [len(ser[0]), len(ser[1])]})
