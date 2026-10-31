@@ -297,6 +297,9 @@ PARSERS = {
 }
 
 
+import arb
+arb.init(app, safe_get, fetch_all_parallel, EXCHANGE_APIS, bingx_params, PARSERS)
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # API ENDPOINTS
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -10,93 +10,212 @@
 <script>(function(){var t=null;try{t=localStorage.getItem('axion-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#E9EAEC':'#25272D')})()</script>
 <script>(function(){var d=document.documentElement;try{var t=+sessionStorage.getItem('axion-pt');sessionStorage.removeItem('axion-pt');if(t&&Date.now()-t<10000&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){d.classList.add('pt-in');setTimeout(function(){d.classList.remove('pt-in')},4500)}}catch(e){}})()</script>
 <style>html{background:#25272D}html[data-theme=light]{background:#E9EAEC}html.pt-in{background:#0E0F11}html:not(.css) body{visibility:hidden}</style>
-<link rel="stylesheet" href="axion.css?v=9" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
+<link rel="stylesheet" href="axion.css?v=10" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
 <script>setTimeout(function(){document.documentElement.classList.add("css")},3000)</script>
 </head>
 <body>
 <div id="pt" aria-hidden="true"><div class="pt-glow"></div><div class="pt-core"><div class="pt-logo"></div><div class="pt-word">AXION <b>TERMINAL</b></div></div><div class="pt-bar"><i></i></div></div>
 <div class="shell">
 <main>
-  <section class="card hero rise" style="--d:2">
-    <div class="row-f" style="margin-bottom:10px"><span class="cap">Global spread scanner</span><span class="sp"></span><span class="live" id="live"><i></i>LOADING</span></div>
-    <div class="h1">Cross-exchange spreads</div>
-    <p class="sub" style="margin-top:6px">Binance · Aster · BingX · OKX · MEXC · Gate.io — best price gaps, refreshed every 15s</p>
-    <div class="row-f" style="margin-top:18px">
-      <div class="seg" id="minSeg" style="min-width:300px;max-width:100%">
-        <button data-v="0" class="on">All</button><button data-v="0.1">≥0.1%</button><button data-v="0.3">≥0.3%</button><button data-v="0.5">≥0.5%</button><button data-v="1">≥1%</button>
+  <section class="rise" style="--d:2;display:grid;gap:14px;position:relative;z-index:20;margin-top:14px">
+    <div class="row-f" style="gap:14px">
+      <div class="h1">Arbitrage</div>
+      <span class="chip sm hot">LIVE</span>
+      <span class="sp"></span>
+      <span class="live" id="live"><i></i>LOADING</span>
+      <span class="cdn" id="cdn">—</span>
+    </div>
+    <div class="tools" id="tools">
+      <div style="position:relative">
+        <button class="tbtn" id="bMode" aria-expanded="false" aria-haspopup="listbox"><span id="modeLbl">long+short:funding</span><svg class="cv" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="pop" id="pMode" hidden role="listbox"></div>
+      </div>
+      <div style="position:relative">
+        <button class="tbtn" id="bEx" aria-expanded="false" aria-haspopup="true"><span>Exchanges</span><span class="n" id="exN">6</span><svg class="cv" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="pop" id="pEx" hidden></div>
+      </div>
+      <div style="position:relative">
+        <button class="tbtn" id="bFl" aria-expanded="false" aria-haspopup="true"><span id="flIco"></span><span>Filters</span><span class="n" id="flN" hidden>0</span></button>
+        <div class="pop" id="pFl" hidden style="min-width:280px">
+          <div class="fgrid">
+            <label>Min spread, %<input class="field" id="fMinS" inputmode="decimal" placeholder="e.g. 0.1" autocomplete="off"></label>
+            <label>Min funding (per 8h), %<input class="field" id="fMinF" inputmode="decimal" placeholder="e.g. 0.05" autocomplete="off"></label>
+            <label>Coin<input class="field" id="fQ" placeholder="BTC, PEPE…" autocomplete="off" spellcheck="false"></label>
+            <button class="btn sm" id="fReset" type="button">Reset filters</button>
+          </div>
+        </div>
       </div>
       <span class="sp"></span>
-      <button class="btn sm" id="refresh"><span class="rI" style="display:grid"></span><span>Refresh</span></button>
+      <button class="tbtn" id="bPause" type="button"><span id="pauseLbl">Auto-refresh: on</span></button>
     </div>
   </section>
 
-  <section class="grid g4 rise" style="--d:3">
-    <div class="card stat"><div class="cap">Pairs scanned</div><div class="v" id="stPairs">—</div></div>
-    <div class="card stat"><div class="cap">Best spread</div><div class="v m up" id="stBest">—</div></div>
-    <div class="card stat"><div class="cap">Avg spread</div><div class="v m" id="stAvg">—</div></div>
-    <div class="card stat"><div class="cap">Hot (≥0.5%)</div><div class="v" id="stHot">—</div></div>
-  </section>
-
-  <section class="card flush tbl rise" style="--d:4;--cm:1.2fr 1fr 84px;--cd:1.1fr 1.4fr 1.4fr 110px">
-    <div class="thead"><div>Pair</div><div class="dm">Exchange A · High</div><div class="dm">Exchange B · Low</div><div class="mo r">Buy → Sell</div><div class="r">Spread</div></div>
+  <section class="card flush tbl arb rise" style="--d:3">
+    <div class="thead"><div>Coin</div><div class="dm">Bundle</div><div class="dm">Funding</div><div class="r sortable" id="hF" data-k="fund">Funding %</div><div class="r sortable" id="hS" data-k="spread">Spread %</div></div>
     <div id="body"></div>
     <div class="foot" id="foot" style="padding:12px 0 14px;border-top:1px solid var(--line)">—</div>
   </section>
 </main>
 </div>
 
-<script src="autocomplete.js?v=9"></script>
-<script src="shared.js?v=9"></script>
+<script src="autocomplete.js?v=10"></script>
+<script src="shared.js?v=10"></script>
 <script>
 (function(){
   AX.init("spread");
-  document.querySelector("#refresh .rI").innerHTML = AX.icon("refresh");
-  var all = [], min = 0, first = true, ts = null;
-  var body = document.getElementById("body"), si = document.getElementById("navSearch");
-  body.innerHTML = AX.skel(8, 3);
-  AX.seg(document.getElementById("minSeg"), function(v){ min = parseFloat(v); first = true; render(); });
-  si.addEventListener("input", function(){ first = false; render(); });
+  var MODES = [
+    ["ff_funding","long+short:funding","Futures ↔ futures, ranked by funding"],
+    ["ff_spread","long+short:spread","Futures ↔ futures, ranked by spread"],
+    ["sf_funding","spot+short:funding","Spot + short futures, ranked by funding"],
+    ["sf_spread","spot+short:spread","Spot + short futures, ranked by spread"],
+    ["sf_spread_neg","spot+short:spread negative","Spot above futures (negative spread)"]
+  ];
+  var ALL = Object.keys(AX.EX);
+  var st = { mode: "ff_funding", ex: ALL.slice(), mins: "", minf: "", q: "", pause: false, sort: null };
+  try { var sv = JSON.parse(localStorage.getItem("axion-arb") || "null"); if (sv) { for (var k in st) if (sv[k] != null && k !== "q") st[k] = sv[k]; } } catch (e) {}
+  if (!st.ex || !st.ex.length) st.ex = ALL.slice();
+  function save(){ try { localStorage.setItem("axion-arb", JSON.stringify(st)); } catch (e) {} }
 
+  var body = document.getElementById("body"), live = document.getElementById("live"), cdn = document.getElementById("cdn");
+  var navQ = document.getElementById("navSearch");
+  body.innerHTML = AX.skel(8, 3);
+  document.getElementById("flIco").innerHTML = AX.icon("filter");
+
+  /* ── popovers ── */
+  var pops = [["bMode","pMode"],["bEx","pEx"],["bFl","pFl"]];
+  function closeAll(except){ pops.forEach(function(p){ if (p[1] !== except){ document.getElementById(p[1]).hidden = true; document.getElementById(p[0]).setAttribute("aria-expanded","false"); } }); }
+  pops.forEach(function(p){
+    var b = document.getElementById(p[0]), m = document.getElementById(p[1]);
+    b.addEventListener("click", function(e){ e.stopPropagation(); var open = m.hidden; closeAll(p[1]); m.hidden = !open; b.setAttribute("aria-expanded", open ? "true" : "false"); });
+    m.addEventListener("click", function(e){ e.stopPropagation(); });
+  });
+  document.addEventListener("click", function(){ closeAll(); });
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape") closeAll(); });
+
+  /* mode list */
+  var pMode = document.getElementById("pMode");
+  function paintMode(){
+    pMode.innerHTML = MODES.map(function(m){ return '<button class="pi' + (m[0] === st.mode ? " on" : "") + '" role="option" data-m="' + m[0] + '" title="' + AX.esc(m[2]) + '">' + AX.esc(m[1]) + "</button>"; }).join("");
+    document.getElementById("modeLbl").textContent = MODES.filter(function(m){ return m[0] === st.mode; })[0][1];
+  }
+  pMode.addEventListener("click", function(e){ var b = e.target.closest("[data-m]"); if (!b) return; st.mode = b.getAttribute("data-m"); st.sort = null; paintMode(); closeAll(); save(); reload(true); });
+  paintMode();
+
+  /* exchange multi-select */
+  var pEx = document.getElementById("pEx");
+  function paintEx(){
+    pEx.innerHTML = '<div class="pop-h"><button data-a="all">All</button><button data-a="none">None</button></div>' + ALL.map(function(k){
+      var on = st.ex.indexOf(k) > -1;
+      return '<button class="pi' + (on ? " on" : "") + '" data-e="' + k + '">' + AX.xt(k) + "<span>" + AX.esc(AX.exName(k)) + '</span><span class="ck"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span></button>';
+    }).join("");
+    document.getElementById("exN").textContent = st.ex.length;
+  }
+  pEx.addEventListener("click", function(e){
+    var a = e.target.closest("[data-a]"), b = e.target.closest("[data-e]");
+    if (a) st.ex = a.getAttribute("data-a") === "all" ? ALL.slice() : [];
+    else if (b){ var k = b.getAttribute("data-e"), i = st.ex.indexOf(k); if (i > -1) st.ex.splice(i, 1); else st.ex.push(k); }
+    else return;
+    paintEx(); save(); reload(true);
+  });
+  paintEx();
+
+  /* filters */
+  var fMinS = document.getElementById("fMinS"), fMinF = document.getElementById("fMinF"), fQ = document.getElementById("fQ");
+  fMinS.value = st.mins; fMinF.value = st.minf;
+  function nFilters(){ return (st.mins !== "" ? 1 : 0) + (st.minf !== "" ? 1 : 0) + (st.q ? 1 : 0); }
+  function paintFl(){ var n = nFilters(), el = document.getElementById("flN"); el.hidden = !n; el.textContent = n; }
+  var ft = 0;
+  function onF(){ st.mins = fMinS.value.trim(); st.minf = fMinF.value.trim(); st.q = fQ.value.trim() || navQ.value.trim(); paintFl(); save(); clearTimeout(ft); ft = setTimeout(function(){ reload(true); }, 260); }
+  [fMinS, fMinF, fQ].forEach(function(el){ el.addEventListener("input", onF); });
+  navQ.addEventListener("input", function(){ fQ.value = navQ.value; onF(); });
+  document.getElementById("fReset").addEventListener("click", function(){ fMinS.value = fMinF.value = fQ.value = navQ.value = ""; onF(); });
+  paintFl();
+
+  /* pause */
+  var pBtn = document.getElementById("bPause");
+  function paintPause(){ document.getElementById("pauseLbl").textContent = "Auto-refresh: " + (st.pause ? "off" : "on"); }
+  pBtn.addEventListener("click", function(){ st.pause = !st.pause; paintPause(); save(); if (!st.pause) reload(false); });
+  paintPause();
+
+  /* sort headers */
+  function sortRows(rows){
+    if (!st.sort) return rows;
+    var k = st.sort; return rows.slice().sort(function(a, b){ return b[k] - a[k]; });
+  }
+  [document.getElementById("hF"), document.getElementById("hS")].forEach(function(h){
+    h.addEventListener("click", function(){ st.sort = h.getAttribute("data-k"); paintSort(); render(); });
+  });
+  function paintSort(){ document.getElementById("hF").classList.toggle("on", st.sort === "fund"); document.getElementById("hS").classList.toggle("on", st.sort === "spread"); }
+
+  /* ── render ── */
+  var rows = [], first = true, tsAt = 0, loading = false;
+  function legHtml(l, kind){
+    var arrow = kind === "l" ? "up" : "down";
+    return '<div class="leg"><span class="ar ' + kind + '">' + AX.icon(arrow) + "</span>" + AX.xt(l.ex) + '<span class="nm">' + AX.esc(AX.exName(l.ex)) + "</span>" +
+      (l.type === "spot" ? '<span class="tg">SPOT</span>' : "") + '<span class="px">' + AX.plain(l.price) + "</span></div>";
+  }
+  function fundHtml(l){
+    if (l.type === "spot") return '<div class="fl mu">—</div>';
+    var r = l.rate, c = r > 0 ? "up" : r < 0 ? "dn" : "";
+    return '<div class="fl"><span class="' + c + '">' + (r > 0 ? "+" : "") + r.toFixed(4) + '%</span><span class="iv">' + l.hours + 'h</span><span class="tm"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span data-next="' + (l.next || "") + '">—</span></span></div>';
+  }
+  function chip(v){ return '<span class="pc ' + (v > 0.0005 ? "p" : v < -0.0005 ? "n" : "") + '">' + (v > 0 ? "+" : "") + v.toFixed(Math.abs(v) < 1 ? 3 : 2) + "%</span>"; }
   function render(){
-    var q = si.value.trim().toLowerCase();
-    var f = all.filter(function(r){ return r.spread_pct >= min && (!q || r.symbol.toLowerCase().indexOf(q) > -1); });
-    if (!f.length){ body.innerHTML = AX.empty("empty", all.length ? "No pairs match the filter" : "No spread data"); document.getElementById("foot").textContent = "0 pairs shown"; return; }
-    body.innerHTML = f.map(function(s, i){
-      var b = AX.base(s.symbol);
-      return '<a class="trow' + (first && i < 14 ? " fresh" : "") + '" style="--d:' + i + '" href="token.html?symbol=' + encodeURIComponent(b) + '">' +
-        '<div class="sym"><span class="ico">' + AX.ico(b) + '</span><span><b>' + AX.esc(b) + (s.hot ? ' <span class="chip sm hot">HOT</span>' : "") + '</b><small class="mo">' + AX.esc(s.exchange_a) + " → " + AX.esc(s.exchange_b) + "</small></span></div>" +
-        '<div class="dm"><span class="ex"><span class="dot" style="background:' + AX.esc(s.color_a) + '"></span>' + AX.esc(s.exchange_a) + '</span><span class="num" style="margin-left:15px">' + AX.plain(s.price_a) + "</span></div>" +
-        '<div class="dm"><span class="ex"><span class="dot" style="background:' + AX.esc(s.color_b) + '"></span>' + AX.esc(s.exchange_b) + '</span><span class="num" style="margin-left:15px">' + AX.plain(s.price_b) + "</span></div>" +
-        '<div class="mo r mu" style="font-size:.75rem">' + AX.plain(s.price_a) + "<br>" + AX.plain(s.price_b) + "</div>" +
-        '<div class="r"><span class="chip ' + (s.hot ? "hot" : "up") + '">' + AX.pct(s.spread_pct, 3) + "</span></div></a>";
+    var f = sortRows(rows);
+    if (!f.length){ body.innerHTML = AX.empty("empty", st.ex.length ? "No bundles match your filters" : "Select at least one exchange"); document.getElementById("foot").textContent = "0 bundles"; return; }
+    body.innerHTML = f.map(function(r, i){
+      var href = "pair.html?symbol=" + encodeURIComponent(r.symbol) + "&long=" + r.long.ex + ":" + r.long.type + "&short=" + r.short.ex + ":" + r.short.type;
+      return '<a class="trow' + (first && i < 14 ? " fresh" : "") + '" style="--d:' + i + '" href="' + href + '">' +
+        '<div class="cc coin"><span class="ico">' + AX.ico(r.symbol) + "</span><b>" + AX.esc(r.symbol) + "</b></div>" +
+        '<div class="dm lg">' + legHtml(r.long, "l") + legHtml(r.short, "s") + "</div>" +
+        '<div class="dm fg">' + fundHtml(r.long) + fundHtml(r.short) + "</div>" +
+        '<div class="pp"><div class="r">' + chip(r.fund) + '</div><div class="r">' + chip(r.spread) + "</div></div></a>";
     }).join("");
     first = false;
-    document.getElementById("foot").textContent = f.length + " pairs shown · updated " + (ts ? ts.toLocaleTimeString() : "—");
+    document.getElementById("foot").textContent = f.length + " of " + total + " bundles · " + (st.ex.length === ALL.length ? "all exchanges" : st.ex.map(AX.exName).join(", "));
+    tick();
   }
 
-  function load(manual){
-    var ic = document.querySelector("#refresh svg");
-    ic.classList.add("spin");
-    AX.get("/api/spread").then(function(j){
-      all = j.data || []; ts = new Date(j.ts);
-      var v = all.map(function(d){ return d.spread_pct; });
-      AX.count(document.getElementById("stPairs"), all.length, function(x){ return Math.round(x); });
-      if (v.length){
-        AX.count(document.getElementById("stBest"), v[0], function(x){ return AX.pct(x, 4); });
-        AX.count(document.getElementById("stAvg"), v.reduce(function(a, b){ return a + b; }, 0) / v.length, function(x){ return AX.pct(x, 4); });
-      }
-      AX.count(document.getElementById("stHot"), all.filter(function(d){ return d.spread_pct >= 0.5; }).length, function(x){ return Math.round(x); });
-      render();
-      AX.live(document.getElementById("live"), "ok", "LIVE");
-      if (manual) AX.toast("Spreads updated");
-    }).catch(function(){
-      AX.live(document.getElementById("live"), "err", "ERROR");
-      if (!all.length) body.innerHTML = AX.empty("alert", "Failed to connect to backend");
-      if (manual) AX.toast("Update failed", false);
-    }).then(function(){ ic.classList.remove("spin"); });
+  /* countdown timers (no re-render) */
+  function tick(){
+    var now = Date.now();
+    [].forEach.call(document.querySelectorAll("[data-next]"), function(el){ var n = +el.getAttribute("data-next"); el.textContent = n ? AX.hms(n - now) : "—"; });
   }
-  document.getElementById("refresh").addEventListener("click", function(){ load(true); });
-  load(); setInterval(load, 15000);
+  setInterval(tick, 1000);
+
+  /* ── loading ── */
+  var total = 0, REFRESH = 6, left = REFRESH, seq = 0;
+  function qs(){
+    var p = ["mode=" + st.mode, "ex=" + st.ex.join(","), "limit=200"];
+    if (st.mins !== "" && !isNaN(parseFloat(st.mins))) p.push("mins=" + parseFloat(st.mins));
+    if (st.minf !== "" && !isNaN(parseFloat(st.minf))) p.push("minf=" + parseFloat(st.minf));
+    if (st.q) p.push("q=" + encodeURIComponent(st.q));
+    return p.join("&");
+  }
+  function reload(resetFirst){
+    if (!st.ex.length){ rows = []; total = 0; render(); return; }
+    var id = ++seq; loading = true;
+    if (resetFirst) first = true;
+    AX.get("/api/arb?" + qs()).then(function(j){
+      if (id !== seq) return;
+      rows = j.data || []; total = j.total || rows.length; tsAt = j.ts;
+      render(); AX.live(live, "ok", "LIVE");
+    }).catch(function(){
+      if (id !== seq) return;
+      AX.live(live, "err", "ERROR");
+      if (!rows.length) body.innerHTML = AX.empty("alert", "Failed to connect to backend");
+    }).then(function(){ if (id === seq) loading = false; left = REFRESH; });
+  }
+  setInterval(function(){
+    if (st.pause){ cdn.textContent = "paused"; return; }
+    if (document.hidden || loading) return;
+    left--; cdn.textContent = left + "s";
+    if (left <= 0) reload(false);
+  }, 1000);
+  paintSort();
+  if (navQ.value) { fQ.value = navQ.value; st.q = navQ.value; }
+  fQ.value = st.q || "";
+  reload(true);
 })();
 </script>
 </body></html>

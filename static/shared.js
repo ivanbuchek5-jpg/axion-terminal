@@ -81,6 +81,11 @@
     alert: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5.5M12 16.2v.1"/>',
     info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.1"/>',
     empty: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M8.5 11h5"/>',
+    up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+    down: '<path d="M12 5v14M6 13l6 6 6-6"/>',
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    filter: '<path d="M4 7h9M18 7h2M4 17h2M11 17h9"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="8.5" cy="17" r="2.3"/>',
+    cv: '<path d="m6 9 6 6 6-6"/>',
     swap: '<path d="M8 4v16M8 20l-3.5-3.5M8 20l3.5-3.5"/><path d="M16 20V4M16 4l-3.5 3.5M16 4l3.5 3.5"/>'
   };
   AX.icon = function (n, cls) {
@@ -175,6 +180,21 @@
       box.style.background = p[3] > 200 ? "rgb(" + p[0] + "," + p[1] + "," + p[2] + ")" : "#fff";
     } catch (er) { box.style.background = "#fff"; }
   }, true);
+
+  /* ── exchanges (shared by Spread + Pair pages) ── */
+  AX.EX = {
+    binance: { n: "Binance", c: "#F0B90B", t: "BN" }, aster: { n: "Aster", c: "#B7791F", t: "AS" },
+    okx: { n: "OKX", c: "#3A3D44", t: "OK" }, bingx: { n: "BingX", c: "#2B6BFF", t: "BX" },
+    mexc: { n: "MEXC", c: "#1B7BE0", t: "MX" }, gate: { n: "Gate", c: "#E24B4B", t: "GT" }
+  };
+  AX.exName = function (k) { return (AX.EX[k] || { n: k }).n; };
+  AX.xt = function (k) { var e = AX.EX[k] || { c: "#555", t: "?" }; return '<span class="xt" style="background:' + e.c + '">' + e.t + "</span>"; };
+  /* 3723000 → "01:02:03" */
+  AX.hms = function (ms) {
+    if (ms == null || isNaN(ms)) return "—";
+    var s = Math.max(0, Math.floor(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+    return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m + ":" + (x < 10 ? "0" : "") + x;
+  };
 
   /* ── count-up ── */
   AX.count = function (el, to, fmt, dur) {
@@ -477,7 +497,7 @@
     var top = document.createElement("div");
     top.innerHTML =
       '<header class="nav" id="nav"><div class="nav-in">' +
-      '<a class="brand" href="index.html" aria-label="AXION TERMINAL"><span class="logo"><img src="logo.png?v=9" alt="" decoding="sync"></span>' +
+      '<a class="brand" href="index.html" aria-label="AXION TERMINAL"><span class="logo"><img src="logo.png?v=10" alt="" decoding="sync"></span>' +
       '<span class="brand-t"><b>AXION</b><i>TERMINAL</i></span></a>' +
       '<nav class="nav-links" id="navLinks" aria-label="Main">' +
       NAV.map(function (n) { return '<a href="' + n[1] + '"' + (n[0] === page ? ' aria-current="page"' : "") + ">" + n[2] + "</a>"; }).join("") + "</nav>" +
