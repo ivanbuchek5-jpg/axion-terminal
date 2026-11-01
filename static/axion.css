@@ -357,11 +357,10 @@ html.pt-out .sb,html.pt-in .sb{opacity:0!important}
 .fgrid{display:grid;gap:10px;padding:6px 6px 4px}
 .fgrid label{display:grid;gap:5px;font:500 .6875rem var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .fgrid .field{height:42px;font-size:.9375rem}
-.xt{position:relative;display:inline-grid;place-items:center;width:24px;height:24px;border-radius:8px;overflow:hidden;background:var(--xc,#555);flex:none;isolation:isolate}
-.xt b{font:700 .625rem var(--mono);color:#fff;letter-spacing:0}
-.xt img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:3px;background:var(--surface2);opacity:0;transition:opacity 160ms var(--ease-out)}
-.xt.has img{opacity:1}
-.xt.has b{visibility:hidden}
+.xt{position:relative;display:inline-grid;place-items:center;width:24px;height:24px;border-radius:8px;overflow:hidden;background:var(--surface2);flex:none;isolation:isolate}
+.xt b{display:none;font:700 .625rem var(--mono);color:#fff;letter-spacing:0}
+.xt.no{background:var(--xc,#555)}.xt.no b{display:block}
+.xt img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:3px}
 .arb{--cm:1fr 92px;--cd:minmax(110px,.6fr) minmax(230px,1.3fr) minmax(260px,1.3fr) 118px 118px}
 .arb .thead>div.sortable{cursor:pointer;user-select:none;transition:color 140ms}
 .arb .thead>div.sortable.on{color:var(--accent-text)}
@@ -449,10 +448,55 @@ html.pt-out .sb,html.pt-in .sb{opacity:0!important}
 .tip .r .v{margin-left:auto;font-weight:700}
 .tip i.dt{width:8px;height:8px;border-radius:50%;flex:none}
 .tip .xt{width:18px;height:18px;border-radius:6px}
-.pos-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px;border-radius:12px;border:1px solid var(--line);text-align:center}
 .kv .acc{color:var(--accent-text);font-weight:700}
-.btns3{display:grid;grid-template-columns:1fr 1.4fr 1.2fr;gap:8px}
 .btn.ghost-g{border-color:var(--accent-text);color:var(--accent-text)}
 .btn.ghost-r{border-color:var(--neg);color:var(--neg)}
 
 .arb .trow[data-href]{cursor:pointer}
+
+/* ── PRE badge, exchange arrow + popover, calculator (v13) ── */
+.pre{position:relative;display:inline-flex;align-items:center;height:18px;padding:0 6px;margin-left:8px;border-radius:6px;font:700 .5625rem var(--mono);letter-spacing:.08em;background:rgba(232,197,71,.16);color:var(--gold);cursor:help;vertical-align:middle;flex:none}
+[data-tip]{position:relative}
+[data-tip]:hover::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);padding:5px 9px;border-radius:8px;background:var(--surface);color:var(--fg);border:1px solid var(--line);box-shadow:var(--shadow);font:500 .6875rem var(--sans);letter-spacing:0;white-space:nowrap;z-index:90;pointer-events:none}
+.sym b .pre,.coin b .pre{margin-left:8px}
+.xa{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:7px;background:var(--surface2);color:var(--muted);flex:none;transition:color 140ms,background-color 140ms,transform 200ms var(--ease-out)}
+.xa svg{width:14px;height:14px}
+.xa[aria-expanded=true]{color:var(--accent-text);transform:rotate(180deg)}
+@media(hover:hover) and (pointer:fine){.xa:hover{color:var(--accent-text)}}
+.xcell{display:inline-flex;align-items:center;gap:8px}
+.xpop{position:fixed;z-index:120;width:min(440px,calc(100vw - 16px));max-height:min(420px,70vh);overflow:auto;border-radius:14px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);animation:popIn 160ms var(--ease-out) both;font:500 .75rem var(--mono);font-variant-numeric:tabular-nums}
+.xp-h{padding:12px 14px 8px;font:600 .6875rem var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.xp-r{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) minmax(0,.8fr) minmax(0,1.3fr);gap:10px;align-items:center;padding:8px 14px;color:var(--fg);text-decoration:none;border-top:1px solid var(--line)}
+.xp-th{border-top:0;padding-top:2px;padding-bottom:6px;color:var(--muted);font-size:.625rem;letter-spacing:.06em;text-transform:uppercase}
+.xp-r.cur{background:var(--surface2)}
+.xp-x{display:flex;align-items:center;gap:7px;min-width:0}
+.xp-x b{font:600 .75rem var(--sans);white-space:nowrap}
+.xp-x .xt{width:20px;height:20px;border-radius:6px}
+.xp-x .tg{width:auto;height:16px;padding:0 5px;font-size:.5rem}
+.xp-e{padding:18px 14px;color:var(--muted);font-family:var(--sans)}
+@media(hover:hover) and (pointer:fine){a.xp-r:hover{background:var(--surface2)}}
+/* calculator */
+.calc{gap:14px}
+.calc .cap{display:flex;align-items:center;justify-content:space-between;min-height:20px;font:600 .625rem var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.calc .lnk{font:600 .6875rem var(--mono);letter-spacing:.04em;color:var(--accent-text);text-transform:none}
+.calc .px2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.calc .pf{display:grid;gap:6px;min-width:0}
+.calc .pf>span{display:flex;align-items:center;gap:6px;font:600 .6875rem var(--sans);color:var(--muted);white-space:nowrap;overflow:hidden}
+.calc .pf .xt{width:18px;height:18px;border-radius:6px}
+.calc .pf>span b{color:var(--fg);font-weight:600;overflow:hidden;text-overflow:ellipsis}
+.calc .field{height:40px;font-size:.875rem}
+.calc .row2{display:grid;grid-template-columns:minmax(0,1fr) 132px;gap:10px;align-items:end}
+.calc .row2 .seg button{height:34px}
+.calc .row2 .field{min-width:0}
+.pos-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-radius:12px;border:1px solid var(--line);overflow:hidden}
+.pos-sum>div{padding:10px 12px;min-width:0;border-left:1px solid var(--line)}
+.pos-sum>div:first-child{border-left:0}
+.pos-sum .k{font:600 .625rem var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.pos-sum .v{font:650 1rem var(--mono);letter-spacing:-.02em;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.calc .kv{gap:0;padding:0}
+.calc .kv>div{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:26px;font:500 .75rem var(--mono);font-variant-numeric:tabular-nums}
+.calc .kv>div>span:first-child{font:500 .75rem var(--sans);color:var(--muted);white-space:nowrap}
+.calc .kv>div>span:last-child{text-align:right;white-space:nowrap}
+.btns3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.btns3 .btn{height:40px;padding:0 8px;font-size:.75rem;white-space:nowrap}
+#cBtnsA .btn{height:42px}

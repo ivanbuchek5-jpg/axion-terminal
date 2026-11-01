@@ -77,7 +77,7 @@
     copy: '<rect x="8.5" y="8.5" width="11" height="11" rx="3"/><path d="M15.5 8.5V7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v5.5a3 3 0 0 0 3 3h1.5"/>',
     check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
     close: '<path d="M6 6l12 12M18 6 6 18"/>',
-    chev: '<path d="m9 6 6 6-6 6"/>',
+    chev: '<path d="m9 6 6 6-6 6"/>', chevd: '<path d="m6 9 6 6 6-6"/>',
     alert: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5.5M12 16.2v.1"/>',
     info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.1"/>',
     empty: '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2M8.5 11h5"/>',
@@ -191,18 +191,21 @@
   };
   AX.exName = function (k) { return (AX.EX[k] || { n: k }).n; };
   var XD = { binance: ["binance.com", 270], aster: ["asterdex.com", 0], okx: ["okx.com", 294], bingx: ["bingx.com", 1064], mexc: ["mexc.com", 544], gate: ["gate.com", 302] };
-  /* logo chain: your own file static/ex/<key>.png → site favicon → CoinMarketCap exchange logo → coloured letters tile */
+  /* one logo per exchange: your file static/ex/<key>.png → CoinMarketCap logo → site favicon; letters only if nothing loads.
+     The working source is remembered, so re-rendered lists never re-request or flash. */
+  var XR = {};
   function xsrc(k, n) {
     var d = XD[k]; if (!d) return null;
-    if (n === 0) return "ex/" + k + ".png?v=12";
-    if (n === 1) return "https://www.google.com/s2/favicons?domain=" + d[0] + "&sz=128";
-    if (n === 2 && d[1]) return "https://s2.coinmarketcap.com/static/img/exchanges/64x64/" + d[1] + ".png";
+    if (n === 0) return "ex/" + k + ".png?v=13";
+    if (n === 1 && d[1]) return "https://s2.coinmarketcap.com/static/img/exchanges/64x64/" + d[1] + ".png";
+    if (n === 2 || (n === 1 && !d[1])) return "https://www.google.com/s2/favicons?domain=" + d[0] + "&sz=128";
     return null;
   }
   AX.xt = function (k) {
-    var e = AX.EX[k] || { c: "#555", t: "?" }, u = xsrc(k, 0);
-    return '<span class="xt" style="--xc:' + e.c + '"><b>' + e.t + "</b>" + (u ? '<img data-k="' + AX.esc(k) + '" data-n="0" src="' + u + '" alt="" referrerpolicy="no-referrer" decoding="async">' : "") + "</span>";
+    var e = AX.EX[k] || { c: "#555", t: "?" }, r = XR[k], n = r ? r.n : 0, u = xsrc(k, n);
+    return '<span class="xt' + (r && r.ok ? " has" : "") + (u ? "" : " no") + '" style="--xc:' + e.c + '"><b>' + e.t + "</b>" + (u ? '<img data-k="' + AX.esc(k) + '" data-n="' + n + '" src="' + u + '" alt="" referrerpolicy="no-referrer" decoding="async">' : "") + "</span>";
   };
+  AX.pre = function (on) { return on ? '<span class="pre" data-tip="Premarket trading">PRE</span>' : ""; };
   /* exchange page of this exact token (type: "fut" | "spot") */
   AX.exUrl = function (ex, type, base) {
     var b = AX.base(base), f = type === "fut";
@@ -220,12 +223,52 @@
     var im = e.target;
     if (!im || im.tagName !== "IMG" || !im.parentNode || !im.parentNode.classList.contains("xt")) return;
     var k = im.getAttribute("data-k"), n = (+im.getAttribute("data-n") || 0) + 1, u = xsrc(k, n);
-    if (u) { im.setAttribute("data-n", n); im.src = u; } else im.remove();
+    XR[k] = { n: n, ok: false };
+    if (u) { im.setAttribute("data-n", n); im.src = u; } else { var pn = im.parentNode; im.remove(); pn.classList.add("no"); }
   }, true);
   document.addEventListener("load", function (e) {
     var im = e.target;
-    if (im && im.tagName === "IMG" && im.parentNode && im.parentNode.classList.contains("xt")) im.parentNode.classList.add("has");
+    if (im && im.tagName === "IMG" && im.parentNode && im.parentNode.classList.contains("xt")) {
+      im.parentNode.classList.add("has"); XR[im.getAttribute("data-k")] = { n: +im.getAttribute("data-n") || 0, ok: true };
+    }
   }, true);
+  /* popover: every exchange that lists this token (Ex · Last · Vol · Fund) */
+  var XP = null, XC = {};
+  function xpClose() { if (XP) { if (XP._b) XP._b.setAttribute("aria-expanded", "false"); XP.remove(); XP = null; } }
+  document.addEventListener("click", function (e) { if (XP && !XP.contains(e.target) && !e.target.closest("[data-xp]")) xpClose(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") xpClose(); });
+  window.addEventListener("resize", xpClose);
+  AX.exPop = function (btn, sym, cur) {
+    var was = XP && XP._b === btn; xpClose(); if (was) return;
+    var el = document.createElement("div"); el.className = "xpop"; el._b = btn; XP = el;
+    btn.setAttribute("aria-expanded", "true");
+    el.innerHTML = '<div class="xp-h">Exchanges · ' + AX.esc(sym) + '</div><div class="xp-b"><div class="xp-e">Loading…</div></div>';
+    document.body.appendChild(el);
+    var place = function () {
+      var r = btn.getBoundingClientRect(), w = el.offsetWidth, h = el.offsetHeight;
+      var l = Math.min(Math.max(8, r.left), innerWidth - w - 8), t = r.bottom + 8;
+      if (t + h > innerHeight - 8) t = Math.max(8, r.top - h - 8);
+      el.style.left = l + "px"; el.style.top = t + "px";
+    };
+    place();
+    var paint = function (rows) {
+      if (XP !== el) return;
+      var f = function (r) {
+        if (r.type !== "fut") return '<span class="mu">—</span>';
+        return '<span class="' + (r.rate > 0 ? "dn" : r.rate < 0 ? "up" : "") + '">' + (r.rate > 0 ? "+" : "") + r.rate.toFixed(4) + '%</span> <span class="mu">' + r.hours + "h</span>";
+      };
+      el.querySelector(".xp-b").innerHTML = rows.length ? '<div class="xp-r xp-th"><span>Ex</span><span>Last</span><span>Vol</span><span>Fund</span></div>' + rows.map(function (r) {
+        var on = cur.indexOf(r.ex + ":" + r.type) > -1;
+        return '<a class="xp-r' + (on ? " cur" : "") + '" href="' + AX.exUrl(r.ex, r.type, sym) + '" target="_blank" rel="noopener"><span class="xp-x">' + AX.xt(r.ex) + "<b>" + AX.esc(AX.exName(r.ex)) + '</b><i class="tg' + (r.type === "spot" ? " s" : "") + '">' + (r.type === "spot" ? "SPOT" : "FUT") + "</i></span><span>" + AX.plain(r.price) + "</span><span>" + AX.vol(r.vol) + "</span><span>" + f(r) + "</span></a>";
+      }).join("") : '<div class="xp-e">No other listings found</div>';
+      place();
+    };
+    var c = XC[sym];
+    if (c && Date.now() - c.t < 15000) { paint(c.d); return; }
+    fetch("/api/tokex?symbol=" + encodeURIComponent(sym), { cache: "no-store" }).then(function (r) { return r.json(); })
+      .then(function (j) { XC[sym] = { t: Date.now(), d: j.data || [] }; paint(j.data || []); })
+      .catch(function () { if (XP === el) el.querySelector(".xp-b").innerHTML = '<div class="xp-e">Could not load exchanges</div>'; });
+  };
   /* 3723000 → "01:02:03" */
   AX.hms = function (ms) {
     if (ms == null || isNaN(ms)) return "—";

@@ -31,6 +31,7 @@ def init(app, safe_get, fetch_all_parallel, apis, bingx_params, parsers):
     _S.update(get=safe_get, many=fetch_all_parallel, apis=apis, bx=bingx_params, parsers=parsers)
     app.add_url_rule("/api/arb", "api_arb", api_arb)
     app.add_url_rule("/api/pair", "api_pair", api_pair)
+    app.add_url_rule("/api/tokex", "api_tokex", api_tokex)
     app.add_url_rule("/api/hist", "api_hist", lambda: api_hist())
 
 
@@ -187,10 +188,75 @@ def _spot():
     return out
 
 
-def _leg_out(ex, typ, d):
+def _is_pre(d):
+    """True when a contract-info record is flagged as pre-market (field names differ per exchange, so scan generically)."""
+    def hit(v):
+        return isinstance(v, str) and any(t in v.lower().replace("-", "_").replace(" ", "_") for t in ("pre_market", "premarket"))
+    for k, v in d.items():
+        if hit(v):
+            return True
+        if isinstance(v, list) and any(hit(x) for x in v):
+            return True
+        if v in (True, 1, "1", "true") and "premarket" in k.lower().replace("_", "").replace("-", ""):
+            return True
+    return False
+
+
+def _pre_load():
+    A = _S["apis"]
+    raw = _S["many"]({
+        "binance": (["https://fapi.binance.com/fapi/v1/exchangeInfo"], None),
+        "aster": (["https://fapi.asterdex.com/fapi/v1/exchangeInfo"], None),
+        "okx": (["https://www.okx.com/api/v5/public/instruments"], {"instType": "SWAP"}),
+        "bingx": (["https://open-api.bingx.com/openApi/swap/v2/quote/contracts"], _S["bx"]()),
+        "gate": ("https://api.gateio.ws/api/v4/futures/usdt/contracts", None),
+        "mexc": ("https://contract.mexc.com/api/v1/contract/detail", None),
+    })
+    out = {e: set() for e in EXCH}
+    seen = False
+    for ex in ("binance", "aster"):
+        for it in ((raw.get(ex) or {}).get("symbols") or []):
+            seen = True
+            sy = it.get("symbol", "")
+            if sy.endswith("USDT") and _is_pre(it):
+                out[ex].add(sy[:-4])
+    for it in ((raw.get("okx") or {}).get("data") or []):
+        seen = True
+        i = it.get("instId", "")
+        if i.endswith("-USDT-SWAP") and _is_pre(it):
+            out["okx"].add(i[:-10])
+    bx = raw.get("bingx") or {}
+    for it in (bx.get("data") if isinstance(bx, dict) and isinstance(bx.get("data"), list) else []):
+        seen = True
+        sy = str(it.get("symbol", "")).replace("-", "")
+        if sy.endswith("USDT") and _is_pre(it):
+            out["bingx"].add(sy[:-4])
+    g = raw.get("gate")
+    for it in (g if isinstance(g, list) else []):
+        seen = True
+        n = str(it.get("name", ""))
+        if n.endswith("_USDT") and _is_pre(it):
+            out["gate"].add(n[:-5])
+    mx = (raw.get("mexc") or {}).get("data")
+    for it in (mx if isinstance(mx, list) else []):
+        seen = True
+        n = str(it.get("symbol", ""))
+        if n.endswith("_USDT") and _is_pre(it):
+            out["mexc"].add(n[:-5])
+    return out if seen else {}
+
+
+def pre_map():
+    """{exchange: {BASE,...}} of pre-market futures (refreshed in the background every 10 min)."""
+    return _swr("pre", 600, _pre_load, default={}) or {}
+
+
+def _leg_out(ex, typ, d, pre=None):
     o = {"ex": ex, "type": typ, "price": d["price"]}
     if typ == "fut":
         o.update(rate=round(d["rate"], 5), hours=d["hours"], next=d["next"])
+        if pre:
+            o["pre"] = 1
     return o
 
 
@@ -209,6 +275,8 @@ def api_arb():
 
     fut = _swr("fut", 4, _futures) or {}
     spot = _swr("spot", 6, _spot) if mode.startswith("sf") else {}
+    PRE = pre_map()
+    P = lambda e, b: b in PRE.get(e, ())
     rows = []
     bases = set()
     for e in exs:
@@ -234,7 +302,7 @@ def api_arb():
                         continue
                     if mode == "ff_spread" and spread <= 0:
                         continue
-                    rows.append((b, _leg_out(le, "fut", ld), _leg_out(se, "fut", sd), spread, fnet))
+                    rows.append((b, _leg_out(le, "fut", ld, P(le, b)), _leg_out(se, "fut", sd, P(se, b)), spread, fnet))
         else:
             sps = [(e, spot[e][b]) for e in exs if b in spot.get(e, {})]
             futs = [(e, fut[e][b]) for e in exs if b in fut.get(e, {})]
@@ -250,7 +318,7 @@ def api_arb():
                         continue
                     if mode == "sf_spread_neg" and spread >= 0:
                         continue
-                    rows.append((b, _leg_out(xe, "spot", xd), _leg_out(ye, "fut", yd), spread, fnet))
+                    rows.append((b, _leg_out(xe, "spot", xd), _leg_out(ye, "fut", yd, P(ye, b)), spread, fnet))
 
     rows = [r for r in rows if r[3] >= mins and r[4] >= minf]
     if mode.endswith("funding"):
@@ -259,7 +327,8 @@ def api_arb():
         rows.sort(key=lambda r: r[3])
     else:
         rows.sort(key=lambda r: r[3], reverse=True)
-    data = [{"symbol": b, "long": l, "short": s, "spread": round(sp, 4), "fund": round(fn, 4)}
+    data = [dict({"symbol": b, "long": l, "short": s, "spread": round(sp, 4), "fund": round(fn, 4)},
+                 **({"pre": 1} if (l.get("pre") or s.get("pre")) else {}))
             for b, l, s, sp, fn in rows[:limit]]
     return jsonify({"data": data, "total": len(rows), "mode": mode, "ts": int(time.time() * 1000)})
 
@@ -398,8 +467,35 @@ def api_pair():
                "spot": (spot.get(ex, {}).get(b) or {}).get("price") if typ == "fut" else None}
         if typ == "fut":
             leg.update(rate=round(d.get("rate", 0), 5), hours=d.get("hours", 8), next=d.get("next"))
+            if b in pre_map().get(ex, ()):
+                leg["pre"] = 1
         out.append(leg)
-    return jsonify({"symbol": b, "long": out[0], "short": out[1], "ts": int(time.time() * 1000)})
+    return jsonify({"symbol": b, "long": out[0], "short": out[1], "pre": 1 if any(l.get("pre") for l in out) else 0,
+                    "ts": int(time.time() * 1000)})
+
+
+def api_tokex():
+    """Every exchange / market that lists this token: last price, 24h volume, funding (+interval). Used by the popover."""
+    b = (request.args.get("symbol") or "").upper().replace("/", "").replace("USDT", "")
+    if not b:
+        return jsonify({"error": "bad params"}), 400
+    fut = _swr("fut", 4, _futures) or {}
+    spot = _swr("spot", 6, _spot) or {}
+    PRE = pre_map()
+    jobs = [(e, "fut") for e in EXCH if b in fut.get(e, {})] + [(e, "spot") for e in EXCH if b in spot.get(e, {})]
+    with ThreadPoolExecutor(max_workers=12) as pool:
+        vols = list(pool.map(lambda j: _swr(f"vol_{j[0]}_{j[1]}_{b}", 60, lambda j=j: _fetch_vol(j[0], j[1], b) or 0.0001, default=0.0), jobs))
+    rows = []
+    for (ex, typ), v in zip(jobs, vols):
+        d = (fut if typ == "fut" else spot)[ex][b]
+        r = {"ex": ex, "type": typ, "price": d["price"], "vol": v}
+        if typ == "fut":
+            r.update(rate=round(d["rate"], 5), hours=d["hours"], next=d["next"])
+            if b in PRE.get(ex, ()):
+                r["pre"] = 1
+        rows.append(r)
+    rows.sort(key=lambda r: -(r["vol"] or 0))
+    return jsonify({"symbol": b, "data": rows, "pre": 1 if any(r.get("pre") for r in rows) else 0})
 
 
 # ── history: 1-minute closes for both legs, aligned → entry/exit spread series ─────────────────────────────────

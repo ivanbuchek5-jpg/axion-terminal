@@ -531,6 +531,15 @@ def api_funding():
             seen.add(k)
             deduped.append(r)
 
+    try:
+        pm = arb.pre_map()
+        for r in deduped:
+            k = {"Gate.io": "gate"}.get(r["exchange"], r["exchange"].lower())
+            b = r["symbol"][:-4] if r["symbol"].endswith("USDT") else r["symbol"]
+            if b in pm.get(k, ()):
+                r["pre"] = 1
+    except Exception:
+        pass
     deduped.sort(key=lambda x: abs(x["rate"]), reverse=True)
     return jsonify({"data": deduped, "ts": int(time.time() * 1000)})
 

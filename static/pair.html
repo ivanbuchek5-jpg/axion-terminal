@@ -10,7 +10,7 @@
 <script>(function(){var t=null;try{t=localStorage.getItem('axion-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#E9EAEC':'#25272D')})()</script>
 <script>(function(){var d=document.documentElement;try{var t=+sessionStorage.getItem('axion-pt');sessionStorage.removeItem('axion-pt');if(t&&Date.now()-t<10000&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){d.classList.add('pt-in');setTimeout(function(){d.classList.remove('pt-in')},4500)}}catch(e){}})()</script>
 <style>html{background:#25272D}html[data-theme=light]{background:#E9EAEC}html.pt-in{background:#0E0F11}html:not(.css) body{visibility:hidden}</style>
-<link rel="stylesheet" href="axion.css?v=12" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
+<link rel="stylesheet" href="axion.css?v=13" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
 <script>setTimeout(function(){document.documentElement.classList.add("css")},3000)</script>
 </head>
 <body>
@@ -21,7 +21,7 @@
     <div class="ph">
       <div class="row-f" style="gap:12px">
         <a class="icon-btn" href="spread.html" aria-label="Back" style="width:40px;height:40px;border-radius:12px" id="back"></a>
-        <span class="sym"><span class="ico" id="pIco" style="width:42px;height:42px;border-radius:13px">—</span><span><b id="pSym" style="font-size:1.25rem">—</b><small id="pSub">—</small></span></span>
+        <span class="sym"><span class="ico" id="pIco" style="width:42px;height:42px;border-radius:13px">—</span><span><b style="font-size:1.25rem"><span id="pSym">—</span><span id="pPre"></span></b><small id="pSub">—</small></span></span>
         <span class="sp"></span>
         <span class="live" id="live"><i></i>LOADING</span>
         <span class="cdn" id="lat" title="Round-trip latency">—</span>
@@ -56,21 +56,31 @@
         <div class="two" id="exs"></div>
       </div>
       <div class="card">
-        <div class="card-h"><span class="t">Spread calculator</span><span class="chip sm" id="cMode">live books</span></div>
+        <div class="card-h"><span class="t">Spread calculator</span><span class="chip sm" id="cMode">simulation</span></div>
         <div class="calc">
-          <div class="row2">
-            <input class="field" id="cAmt" inputmode="decimal" autocomplete="off" placeholder="Amount" value="1000" aria-label="Amount">
-            <div class="seg" id="cUnit" style="min-width:130px"><button data-v="usd" class="on">USD</button><button data-v="coin">Coins</button></div>
+          <div>
+            <div class="cap"><span>Entry prices · <span id="cAuto">live</span></span><button class="lnk" id="cLive" type="button" hidden>Use live prices</button></div>
+            <div class="px2" style="margin-top:8px">
+              <label class="pf"><span id="cLbL"></span><input class="field" id="cPL" inputmode="decimal" autocomplete="off" placeholder="Price" aria-label="Long price"></label>
+              <label class="pf"><span id="cLbS"></span><input class="field" id="cPS" inputmode="decimal" autocomplete="off" placeholder="Price" aria-label="Short price"></label>
+            </div>
           </div>
-          <div class="kv" style="padding:0" id="cKv"></div>
+          <div>
+            <div class="cap"><span>Size</span></div>
+            <div class="row2" style="margin-top:8px">
+              <input class="field" id="cAmt" inputmode="decimal" autocomplete="off" placeholder="Amount" value="1000" aria-label="Amount">
+              <div class="seg" id="cUnit"><button data-v="usd" class="on">USD</button><button data-v="coin">Coins</button></div>
+            </div>
+          </div>
           <div class="pos-sum">
-            <div><div class="k" id="cK1">Open spread</div><div class="v" id="cEntry">—</div></div>
-            <div><div class="k" id="cK2">PNL (close now)</div><div class="v" id="cPnl">—</div></div>
-            <div><div class="k" id="cK3">Close spread</div><div class="v" id="cExit">—</div></div>
+            <div><div class="k">Spread</div><div class="v" id="cEntry">—</div></div>
+            <div><div class="k">PnL</div><div class="v" id="cPnl">—</div></div>
+            <div><div class="k">Closed PnL</div><div class="v" id="cExit">—</div></div>
           </div>
+          <div class="kv" id="cKv"></div>
           <div class="mu" id="cWarn" style="font:500 .75rem var(--sans);min-height:1em"></div>
           <div class="row-f" id="cBtnsA"><button class="btn primary" id="cOpen" type="button" style="flex:1">Open position</button></div>
-          <div class="btns3" id="cBtnsB" hidden><a class="btn" href="spread.html" id="cBack">Back</a><button class="btn ghost-g" id="cAdd" type="button">Increase position</button><button class="btn ghost-r" id="cClose" type="button">Close position</button></div>
+          <div class="btns3" id="cBtnsB" hidden><a class="btn" href="spread.html" id="cBack">Back</a><button class="btn ghost-g" id="cAdd" type="button">Increase</button><button class="btn ghost-r" id="cClose" type="button">Close position</button></div>
         </div>
       </div>
     </div>
@@ -83,9 +93,9 @@
 </main>
 </div>
 
-<script src="lwc.js?v=12"></script>
-<script src="autocomplete.js?v=12"></script>
-<script src="shared.js?v=12"></script>
+<script src="lwc.js?v=13"></script>
+<script src="autocomplete.js?v=13"></script>
+<script src="shared.js?v=13"></script>
 <script>
 (function(){
   AX.init("spread", { ticker: false });
@@ -120,7 +130,7 @@
   var chart = null, sE = null, sX = null, hist = { e: [], x: [] }, pxMap = {};
   function cc(){
     var l = AX.theme() === "light";
-    return { txt: l ? "#6A6E78" : "#9A9DA6", grid: l ? "#E3E5E8" : "#2E3138", up: l ? "#00A63E" : "#00FF48", dn: l ? "#D6342C" : "#FF5A52", bg: "transparent" };
+    return { txt: l ? "#6A6E78" : "#9A9DA6", grid: l ? "rgba(14,15,17,.055)" : "rgba(255,255,255,.04)", up: l ? "#00A63E" : "#00FF48", dn: l ? "#D6342C" : "#FF5A52", bg: "transparent" };
   }
   function initChart(){
     if (!window.LightweightCharts){ $("sp-chart").innerHTML = AX.empty("alert", "Chart library failed to load"); return; }
@@ -210,28 +220,53 @@
     var fees = (d.long.fee + d.short.fee) * 2;
     $("vFee").textContent = fees.toFixed(3) + "%";
     pushPoint(en, ex, (t.aL + t.bL) / 2, (t.aS + t.bS) / 2);
-    var rows = [["LONG", "l", d.long], ["SHORT", "s", d.short]].map(function(r){
-      var l = r[2], bid = l.bids[0] ? l.bids[0][0] : 0, ask = l.asks[0] ? l.asks[0][0] : 0, url = AX.exUrl(l.ex, l.type, sym);
-      var fund = l.type === "fut" ? '<span class="' + cls(l.rate) + '">' + sgn(l.rate, 4) + '</span> <span class="mu">' + l.hours + 'h · <span data-next="' + (l.next || "") + '">—</span></span>' : '<span class="mu">—</span>';
-      var px = AX.price(l.price || (bid + ask) / 2);
-      return "<tr><td><span class=\"role " + r[1] + "\">" + r[0] + "</span></td>" +
-        '<td><a class="xl" href="' + url + '" target="_blank" rel="noopener" title="Open ' + AX.esc(sym) + " on " + AX.esc(AX.exName(l.ex)) + '">' + AX.xt(l.ex) + '<span class="n">' + AX.esc(AX.exName(l.ex)) + '</span><span class="tg' + (l.type === "spot" ? " s" : "") + '">' + (l.type === "spot" ? "SPOT" : "FUTURES") + "</span></a></td>" +
-        '<td><a class="xl" href="' + url + '" target="_blank" rel="noopener"><span class="p">' + px + "</span></a></td>" +
-        "<td>" + AX.plain(bid) + " / " + AX.plain(ask) + "</td><td>" + (l.type === "fut" && l.spot ? AX.price(l.spot) : "—") + "</td><td>" + fund + "</td><td>" + AX.vol(l.vol24h) + "</td></tr>";
-    }).join("");
-    $("ptb").innerHTML = rows; tick();
-    $("exs").innerHTML = [d.long, d.short].map(function(l){
+    if (!built){ buildHead(d); built = true; }
+    var pre = d.pre ? 1 : 0; if (pre !== prePaint){ prePaint = pre; $("pPre").innerHTML = AX.pre(pre); }
+    [d.long, d.short].forEach(function(l, i){
       var bid = l.bids[0] ? l.bids[0][0] : 0, ask = l.asks[0] ? l.asks[0][0] : 0, mid = (bid + ask) / 2;
-      var bs = mid ? (ask - bid) / mid * 100 : 0, url = AX.exUrl(l.ex, l.type, sym);
-      var fr = l.type === "fut" ? '<span class="' + (l.rate > 0 ? "dn" : l.rate < 0 ? "up" : "") + '">' + sgn(l.rate, 4) + "</span>" : "—";
-      return '<div class="exc"><b><a class="xl" href="' + url + '" target="_blank" rel="noopener">' + AX.xt(l.ex) + '<span class="n">' + AX.esc(AX.exName(l.ex)) + "</span></a></b>" +
-        "<div><span>24h volume</span><span>" + AX.vol(l.vol24h) + "</span></div>" +
-        "<div><span>Funding</span><span>" + fr + "</span></div>" +
-        "<div><span>Interval</span><span>" + (l.type === "fut" ? l.hours + "h" : "—") + "</span></div>" +
-        "<div><span>Next payout</span><span>" + (l.type === "fut" ? '<span data-next="' + (l.next || "") + '">—</span>' : "—") + "</span></div>" +
-        "<div><span>Book spread</span><span>" + bs.toFixed(3) + "%</span></div></div>";
+      var bs = mid ? (ask - bid) / mid * 100 : 0, fut = l.type === "fut";
+      setT("t" + i + "p", AX.price(l.price || mid));
+      setT("t" + i + "b", AX.plain(bid) + " / " + AX.plain(ask));
+      setT("t" + i + "s", fut && l.spot ? AX.price(l.spot) : "—");
+      setT("t" + i + "v", AX.vol(l.vol24h));
+      setT("e" + i + "v", AX.vol(l.vol24h));
+      setT("e" + i + "b", bs.toFixed(3) + "%");
+      if (fut){
+        setT("t" + i + "fr", sgn(l.rate, 4), cls(l.rate)); setT("t" + i + "fh", l.hours + "h");
+        setT("e" + i + "f", sgn(l.rate, 4), l.rate > 0 ? "dn" : l.rate < 0 ? "up" : ""); setT("e" + i + "i", l.hours + "h");
+        ["t" + i + "fn", "e" + i + "n"].forEach(function(id){ var el = $(id), v = String(l.next || ""); if (el.getAttribute("data-next") !== v) el.setAttribute("data-next", v); });
+      }
+    });
+    tick();
+  }
+  /* static structure is built once; polls only change text, so logos and timers never re-render */
+  var built = false, prePaint = -1;
+  function setT(id, txt, c){ var el = $(id); if (!el) return; if (el.textContent !== txt) el.textContent = txt; if (c != null && el.className !== c) el.className = c; }
+  function buildHead(d){
+    var legs = [d.long, d.short];
+    $("ptb").innerHTML = legs.map(function(l, i){
+      var url = AX.exUrl(l.ex, l.type, sym), spot = l.type === "spot", r = i ? ["SHORT", "s"] : ["LONG", "l"];
+      var fund = spot ? '<span class="mu">—</span>' : '<span id="t' + i + 'fr"></span> <span class="mu"><span id="t' + i + 'fh"></span> · <span id="t' + i + 'fn" data-next="">—</span></span>';
+      return '<tr><td><span class="role ' + r[1] + '">' + r[0] + '</span></td>' +
+        '<td><span class="xcell"><a class="xl" href="' + url + '" target="_blank" rel="noopener" title="Open ' + AX.esc(sym) + " on " + AX.esc(AX.exName(l.ex)) + '">' + AX.xt(l.ex) + '<span class="n">' + AX.esc(AX.exName(l.ex)) + '</span><span class="tg' + (spot ? " s" : "") + '">' + (spot ? "SPOT" : "FUTURES") + '</span></a>' +
+        '<button class="xa" type="button" data-xp="' + i + '" aria-label="Other exchanges with ' + AX.esc(sym) + '" aria-expanded="false">' + AX.icon("chevd") + "</button></span></td>" +
+        '<td><a class="xl" href="' + url + '" target="_blank" rel="noopener"><span class="p" id="t' + i + 'p"></span></a></td>' +
+        '<td id="t' + i + 'b"></td><td id="t' + i + 's"></td><td>' + fund + '</td><td id="t' + i + 'v"></td></tr>';
+    }).join("");
+    $("exs").innerHTML = legs.map(function(l, i){
+      var url = AX.exUrl(l.ex, l.type, sym), fut = l.type === "fut";
+      return '<div class="exc"><b><span class="xcell"><a class="xl" href="' + url + '" target="_blank" rel="noopener">' + AX.xt(l.ex) + '<span class="n">' + AX.esc(AX.exName(l.ex)) + "</span></a>" +
+        '<button class="xa" type="button" data-xp="' + i + '" aria-label="Other exchanges with ' + AX.esc(sym) + '" aria-expanded="false">' + AX.icon("chevd") + "</button></span></b>" +
+        '<div><span>24h volume</span><span id="e' + i + 'v">—</span></div>' +
+        "<div><span>Funding</span>" + (fut ? '<span id="e' + i + 'f">—</span>' : "<span>—</span>") + "</div>" +
+        "<div><span>Interval</span>" + (fut ? '<span id="e' + i + 'i">—</span>' : "<span>—</span>") + "</div>" +
+        "<div><span>Next payout</span>" + (fut ? '<span id="e' + i + 'n" data-next="">—</span>' : "<span>—</span>") + "</div>" +
+        '<div><span>Book spread</span><span id="e' + i + 'b">—</span></div></div>';
     }).join("");
   }
+  document.addEventListener("click", function(e){
+    var b = e.target.closest("[data-xp]"); if (b) AX.exPop(b, sym, [LG, SH]);
+  });
 
   /* ── order books ── */
   function renderBook(i, l){
@@ -249,32 +284,56 @@
   }
 
   /* ── calculator + simulated position (all numbers recomputed from the live books on every poll) ── */
-  var unit = "usd", PK = "axion-pos:" + KEY, pos = null;
+  var unit = "usd", PK = "axion-pos:" + KEY, pos = null, man = { l: false, s: false };
   try { pos = JSON.parse(localStorage.getItem(PK) || "null"); } catch (e) {}
   function savePos(){ try { if (pos) localStorage.setItem(PK, JSON.stringify(pos)); else localStorage.removeItem(PK); } catch (e) {} }
+  function xlab(l, role){ return AX.xt(l.ex) + "<b>" + role + " · " + AX.esc(AX.exName(l.ex)) + (l.type === "spot" ? " spot" : "") + "</b>"; }
+  $("cLbL").innerHTML = xlab({ ex: lg[0], type: lg[1] }, "Long"); $("cLbS").innerHTML = xlab({ ex: sh[0], type: sh[1] }, "Short");
+  function fp(v){ if (!(v > 0)) return ""; var s = String(+v.toPrecision(7)); if (/e/.test(s)) s = v.toFixed(10).replace(/0+$/, ""); return s; }
+  function num(el){ var a = parseFloat(String(el.value).replace(",", ".")); return a > 0 ? a : 0; }
+  /* prices start as the latest exchange prices (Long = best ask, Short = best bid) until the user types their own */
+  function syncPx(d){
+    var t = tops(d); if (!t) return;
+    [["l", "cPL", t.aL], ["s", "cPS", t.bS]].forEach(function(x){
+      var el = $(x[1]); if (man[x[0]] || document.activeElement === el) return;
+      var v = fp(x[2]); if (el.value !== v) el.value = v;
+    });
+    $("cLive").hidden = !(man.l || man.s); $("cAuto").textContent = (man.l || man.s) ? "manual" : "live";
+  }
+  [["cPL", "l"], ["cPS", "s"]].forEach(function(x){
+    $(x[0]).addEventListener("input", function(){ man[x[1]] = this.value.trim() !== ""; calc(); });
+    $(x[0]).addEventListener("blur", function(){ if (this.value.trim() === "") man[x[1]] = false; calc(); });
+  });
+  $("cLive").addEventListener("click", function(){ man = { l: false, s: false }; calc(); });
   AX.seg($("cUnit"), function(v){ unit = v; calc(); });
   $("cAmt").addEventListener("input", calc);
-  function qtyIn(d){
-    var a = parseFloat(String($("cAmt").value).replace(",", "."));
-    if (!(a > 0)) return 0;
+  function qtyIn(pL){
+    var a = num($("cAmt")); if (!(a > 0)) return 0;
     if (unit === "coin") return a;
-    var p = d.long.asks[0] ? d.long.asks[0][0] : 0; return p ? a / p : 0;
+    return pL ? a / pL : 0;
   }
   function fmtCoins(q){ return q >= 100 ? AX.num(q, 0) : q >= 1 ? q.toFixed(2) : AX.plain(q); }
   function dur(ms){ if (ms == null || ms < 0) return "—"; var m = Math.floor(ms / 60000), h = Math.floor(m / 60); return h ? h + "h " + (m % 60) + "m" : m + "m " + Math.floor(ms % 60000 / 1000) + "s"; }
   function money(v, sign){ var a = Math.abs(v), t = "$" + (a >= 100 ? AX.num(a, 2) : a.toFixed(a >= 1 ? 2 : 4)); return v < 0 ? "-" + t : (sign ? "+" : "") + t; }
   function row(k, v, c){ return "<div><span>" + AX.esc(k) + "</span><span" + (c ? ' class="' + c + '"' : "") + ">" + v + "</span></div>"; }
   function fundLine(l, role, qty){
-    if (l.type !== "fut") return { v: 0, html: row("Funding · " + role + " " + AX.exName(l.ex), "—") };
+    var nm = "Funding · " + role + " " + AX.exName(l.ex);
+    if (l.type !== "fut") return { v: 0, html: row(nm, "—") };
     var v = (role === "Long" ? -1 : 1) * l.rate / 100 * qty * l.price;
-    return { v: v, html: row("Funding · " + role + " " + AX.exName(l.ex), '<span class="' + cls(v) + '">' + money(v, true) + "</span> <span class=\"mu\">in " + dur(l.next ? l.next - Date.now() : null) + "</span>") };
+    return { v: v, html: row(nm, '<span class="' + cls(v) + '">' + money(v, true) + '</span> <span class="mu">' + dur(l.next ? l.next - Date.now() : null) + "</span>") };
+  }
+  function sum(sp, pnl, cl){
+    var s = [[ "cEntry", sp, sgn(sp, 4) ], [ "cPnl", pnl, money(pnl, true) ], [ "cExit", cl, money(cl, true) ]];
+    s.forEach(function(x){ setT(x[0], x[2], "v " + cls(x[1])); });
   }
   function calc(){
     var d = D; if (!d) return;
     var t = tops(d);
     $("cBtnsA").hidden = !!pos; $("cBtnsB").hidden = !pos;
-    $("cMode").textContent = pos ? "position open" : "live books";
-    if (!t){ return; }
+    $("cMode").textContent = pos ? "position open" : "simulation";
+    if (!t) return;
+    syncPx(d);
+    var pL = num($("cPL")) || t.aL, pS = num($("cPS")) || t.bS;
     if (pos){
       var q = pos.qty, ls = walk(d.long.bids, q), sb = walk(d.short.asks, q), lb = walk(d.long.asks, q), ss = walk(d.short.bids, q);
       var cur = lb.avg ? (ss.avg - lb.avg) / lb.avg * 100 : 0;
@@ -283,62 +342,57 @@
       var pnlConv = (pos.shortAvg - pos.longAvg) * q - pos.feeOpen - closeFee;
       var nl = pos.longAvg * q, ns = pos.shortAvg * q;
       var fl = fundLine(d.long, "Long", q), fs = fundLine(d.short, "Short", q);
-      $("cK1").textContent = "Current spread"; $("cK2").textContent = "PNL"; $("cK3").textContent = "PNL at spread close";
-      $("cEntry").textContent = sgn(cur, 4); $("cEntry").className = "v " + (cur >= 0 ? "acc" : "dn");
-      $("cPnl").textContent = money(pnl, true); $("cPnl").className = "v " + cls(pnl);
-      $("cExit").textContent = money(pnlConv, true); $("cExit").className = "v " + cls(pnlConv);
+      sum(cur, pnl, pnlConv);
       $("cKv").innerHTML = row("Entry prices", "$" + AX.plain(pos.longAvg) + " / $" + AX.plain(pos.shortAvg)) +
-        row("Position size", fmtCoins(q * 2) + " coins / " + money(nl + ns) + ' <span class="' + cls(ns - nl) + '">(' + money(ns - nl, true) + ")</span>") +
-        row("Position size · Long", fmtCoins(q) + " coins / " + money(nl)) +
-        row("Position size · Short", fmtCoins(q) + " coins / " + money(ns)) +
+        row("Size · Long", fmtCoins(q) + " " + AX.esc(sym) + " · " + money(nl)) +
+        row("Size · Short", fmtCoins(q) + " " + AX.esc(sym) + " · " + money(ns)) +
         row("Opened", new Date(pos.ts).toLocaleString()) +
-        row("Open spread", sgn(pos.spread, 4), "acc") +
-        row("Price spread", money((pos.shortAvg - pos.longAvg) * q, true), cls(pos.shortAvg - pos.longAvg)) +
+        row("Open spread", sgn(pos.spread, 4), cls(pos.spread)) +
+        row("Price gap", money((pos.shortAvg - pos.longAvg) * q, true), cls(pos.shortAvg - pos.longAvg)) +
         row("Funding", '<span class="' + cls(fl.v + fs.v) + '">' + money(fl.v + fs.v, true) + "</span>") + fl.html + fs.html +
         row("Fees", '<span class="dn">' + money(-(pos.feeOpen + closeFee)) + "</span>");
       $("cWarn").textContent = "";
       return;
     }
-    /* no position: preview for the entered size */
-    var q0 = qtyIn(d), warn = "";
-    $("cK1").textContent = "Open spread"; $("cK2").textContent = "PNL (close now)"; $("cK3").textContent = "Close spread";
-    if (!(q0 > 0)){ ["cEntry","cPnl","cExit"].forEach(function(i){ $(i).textContent = "—"; $(i).className = "v"; }); $("cKv").innerHTML = ""; $("cWarn").textContent = "Enter a quantity (coins) or position size (USD)."; calc.last = null; return; }
-    var lb0 = walk(d.long.asks, q0), ss0 = walk(d.short.bids, q0), ls0 = walk(d.long.bids, q0), sb0 = walk(d.short.asks, q0);
-    var got = Math.min(lb0.got, ss0.got, ls0.got, sb0.got);
-    if (got < q0 * .999) warn = "Not enough depth in the loaded order book: " + fmtCoins(got) + " of " + fmtCoins(q0) + " " + sym + " would fill. Results use the available depth.";
+    /* no position: preview for the entered prices and size */
+    var q0 = qtyIn(pL);
+    if (!(q0 > 0) || !(pL > 0) || !(pS > 0)){ ["cEntry", "cPnl", "cExit"].forEach(function(i){ setT(i, "—", "v"); }); $("cKv").innerHTML = ""; $("cWarn").textContent = "Enter a size (USD or coins) and both prices."; calc.last = null; return; }
+    var ls0 = walk(d.long.bids, q0), sb0 = walk(d.short.asks, q0), lb0 = walk(d.long.asks, q0), ss0 = walk(d.short.bids, q0);
+    var got = Math.min(ls0.got, sb0.got, lb0.got, ss0.got), warn = "";
+    if (got < q0 * .999) warn = "Order book is too shallow: " + fmtCoins(got) + " of " + fmtCoins(q0) + " " + sym + " fits. Results use the available depth.";
     var qq = got || q0;
-    var entry = lb0.avg ? (ss0.avg - lb0.avg) / lb0.avg * 100 : 0, exitS = sb0.avg ? (ls0.avg - sb0.avg) / sb0.avg * 100 : 0;
-    var feeOpen = qq * (lb0.avg * d.long.fee + ss0.avg * d.short.fee) / 100, feeClose = qq * (ls0.avg * d.long.fee + sb0.avg * d.short.fee) / 100;
-    var gap = (ss0.avg - lb0.avg) * qq, pnl0 = (ss0.avg - lb0.avg - (sb0.avg - ls0.avg)) * qq - feeOpen - feeClose;
-    $("cEntry").textContent = sgn(entry, 4); $("cEntry").className = "v " + cls(entry);
-    $("cExit").textContent = sgn(exitS, 4); $("cExit").className = "v " + cls(exitS);
-    $("cPnl").textContent = money(pnl0, true); $("cPnl").className = "v " + cls(pnl0);
+    var entry = (pS - pL) / pL * 100;
+    var feeOpen = qq * (pL * d.long.fee + pS * d.short.fee) / 100, feeClose = qq * (ls0.avg * d.long.fee + sb0.avg * d.short.fee) / 100;
+    var gap = (pS - pL) * qq, pnl0 = (pS - sb0.avg + ls0.avg - pL) * qq - feeOpen - feeClose, conv = gap - feeOpen - feeClose;
+    sum(entry, pnl0, conv);
     var fl0 = fundLine(d.long, "Long", qq), fs0 = fundLine(d.short, "Short", qq);
-    $("cKv").innerHTML = row("Position", fmtCoins(qq) + " " + AX.esc(sym) + " · " + money(qq * lb0.avg)) +
-      row("Avg buy · " + AX.exName(d.long.ex), "$" + AX.plain(lb0.avg)) + row("Avg sell · " + AX.exName(d.short.ex), "$" + AX.plain(ss0.avg)) +
-      row("Price gap", money(gap, true), cls(gap)) + row("Fees open + close (est.)", '<span class="dn">' + money(-(feeOpen + feeClose)) + "</span>") + fl0.html + fs0.html;
+    $("cKv").innerHTML = row("Position", fmtCoins(qq) + " " + AX.esc(sym) + " · " + money(qq * pL)) +
+      row("Price gap", money(gap, true), cls(gap)) +
+      row("Fees open + close (est.)", '<span class="dn">' + money(-(feeOpen + feeClose)) + "</span>") + fl0.html + fs0.html;
     $("cWarn").textContent = warn;
-    calc.last = { lb: lb0, ss: ss0, qq: qq, feeOpen: feeOpen, entry: entry, fee: feeOpen };
+    calc.last = { pL: pL, pS: pS, qq: qq, feeOpen: feeOpen, entry: entry };
   }
   $("cOpen").addEventListener("click", function(){
-    var c = calc.last; if (!c || !c.qq) return;
-    pos = { qty: c.qq, longAvg: c.lb.avg, shortAvg: c.ss.avg, feeOpen: c.feeOpen, spread: c.entry, ts: Date.now() };
+    var c = calc.last; if (!c || !c.qq) { AX.toast("Enter a size and both prices", false); return; }
+    pos = { qty: c.qq, longAvg: c.pL, shortAvg: c.pS, feeOpen: c.feeOpen, spread: c.entry, ts: Date.now() };
     savePos(); AX.toast("Position opened (simulation)"); calc();
   });
   $("cAdd").addEventListener("click", function(){
-    var d = D; if (!d || !pos) return; var q = qtyIn(d); if (!(q > 0)) { AX.toast("Enter the size to add", false); return; }
-    var lb = walk(d.long.asks, q), ss = walk(d.short.bids, q), g = Math.min(lb.got, ss.got); if (!g) return;
+    var d = D, t = d && tops(d); if (!t || !pos) return;
+    var pL = num($("cPL")) || t.aL, pS = num($("cPS")) || t.bS, q = qtyIn(pL);
+    if (!(q > 0)) { AX.toast("Enter the size to add", false); return; }
+    var g = Math.min(walk(d.long.asks, q).got, walk(d.short.bids, q).got); if (!g) return;
     var n = pos.qty + g;
-    pos.longAvg = (pos.longAvg * pos.qty + lb.avg * g) / n; pos.shortAvg = (pos.shortAvg * pos.qty + ss.avg * g) / n;
-    pos.feeOpen += g * (lb.avg * d.long.fee + ss.avg * d.short.fee) / 100; pos.qty = n;
+    pos.longAvg = (pos.longAvg * pos.qty + pL * g) / n; pos.shortAvg = (pos.shortAvg * pos.qty + pS * g) / n;
+    pos.feeOpen += g * (pL * d.long.fee + pS * d.short.fee) / 100; pos.qty = n;
     pos.spread = (pos.shortAvg - pos.longAvg) / pos.longAvg * 100; savePos(); AX.toast("Position increased"); calc();
   });
   $("cClose").addEventListener("click", function(){
-    var p = $("cPnl").textContent; pos = null; savePos(); AX.toast("Position closed · PNL " + p); calc();
+    var p = $("cPnl").textContent; pos = null; savePos(); AX.toast("Position closed · PnL " + p); calc();
   });
 
   /* ── countdown ── */
-  function tick(){ var n = Date.now(); [].forEach.call(document.querySelectorAll("[data-next]"), function(el){ var v = +el.getAttribute("data-next"); el.textContent = v ? AX.hms(v - n) : "—"; }); }
+  function tick(){ var n = Date.now(); [].forEach.call(document.querySelectorAll("[data-next]"), function(el){ var v = +el.getAttribute("data-next"), t = v ? AX.hms(v - n) : "—"; if (el.textContent !== t) el.textContent = t; }); }
   setInterval(tick, 1000);
 
   /* ── polling ── */
@@ -353,7 +407,7 @@
       $("lat").textContent = Math.round(performance.now() - t0) + "ms";
       AX.live($("live"), "ok", "LIVE");
       renderHead(d); renderBook(0, d.long); renderBook(1, d.short); calc();
-    }).catch(function(){ bad++; AX.live($("live"), "err", bad > 2 ? "NO DATA" : "RETRY"); if (!D) $("ptb").innerHTML = '<tr><td colspan="7" class="mu">Waiting for exchange data…</td></tr>'; })
+    }).catch(function(){ bad++; AX.live($("live"), "err", bad > 2 ? "NO DATA" : "RETRY"); if (!D && !built) $("ptb").innerHTML = '<tr><td colspan="7" class="mu">Waiting for exchange data…</td></tr>'; })
     .then(function(){ busy = false; timer = setTimeout(poll, Math.max(250, ms - (performance.now() - t0))); });
   }
   initChart();
