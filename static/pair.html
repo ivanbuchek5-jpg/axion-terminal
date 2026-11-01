@@ -10,7 +10,7 @@
 <script>(function(){var t=null;try{t=localStorage.getItem('axion-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#E9EAEC':'#25272D')})()</script>
 <script>(function(){var d=document.documentElement;try{var t=+sessionStorage.getItem('axion-pt');sessionStorage.removeItem('axion-pt');if(t&&Date.now()-t<10000&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){d.classList.add('pt-in');setTimeout(function(){d.classList.remove('pt-in')},4500)}}catch(e){}})()</script>
 <style>html{background:#25272D}html[data-theme=light]{background:#E9EAEC}html.pt-in{background:#0E0F11}html:not(.css) body{visibility:hidden}</style>
-<link rel="stylesheet" href="axion.css?v=13" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
+<link rel="stylesheet" href="axion.css?v=14" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
 <script>setTimeout(function(){document.documentElement.classList.add("css")},3000)</script>
 </head>
 <body>
@@ -27,20 +27,20 @@
         <span class="cdn" id="lat" title="Round-trip latency">—</span>
       </div>
       <div class="big-sp">
-        <div><div class="k">Entry spread</div><div class="v" id="vEntry">—</div></div>
-        <div><div class="k">Exit spread</div><div class="v" id="vExit">—</div></div>
-        <div><div class="k">Funding net / 8h</div><div class="v" id="vFund">—</div></div>
-        <div><div class="k">Fees open+close</div><div class="v mu" id="vFee">—</div></div>
+        <div><div class="k">Entry</div><div class="v" id="vEntry">—</div></div>
+        <div><div class="k">Exit</div><div class="v" id="vExit">—</div></div>
+        <div><div class="k">Funding 8h</div><div class="v" id="vFund">—</div></div>
+        <div><div class="k">Fees</div><div class="v mu" id="vFee">—</div></div>
       </div>
       <div class="ptbl-w"><table class="ptbl"><thead><tr><th>Side</th><th>Exchange</th><th>Price</th><th>Bid / Ask</th><th>Spot</th><th>Funding</th><th>24h volume</th></tr></thead><tbody id="ptb"></tbody></table></div>
     </div>
   </section>
 
   <section class="pgrid rise" style="--d:3">
-    <div class="card" style="min-width:0">
+    <div class="card c-chart" style="min-width:0">
       <div class="ctl">
-        <div class="seg" id="ivSeg" style="min-width:150px"><button data-v="1000" class="on">1s</button><button data-v="2000">2s</button><button data-v="5000">5s</button></div>
-        <div class="seg" id="rgSeg" style="min-width:170px"><button data-v="60">1h</button><button data-v="360">6h</button><button data-v="1440" class="on">24h</button></div>
+        <div class="seg" id="ivSeg"><button data-v="1000" class="on">1s</button><button data-v="2000">2s</button><button data-v="5000">5s</button></div>
+        <div class="seg" id="rgSeg"><button data-v="60">1h</button><button data-v="360">6h</button><button data-v="1440" class="on">24h</button></div>
         <div class="legend"><span><i style="background:var(--accent-text)"></i>Entry (open)</span><span><i style="background:var(--neg)"></i>Exit (close)</span></div>
         <span class="sp"></span>
         <button class="btn sm" id="bFit" type="button">Fit</button>
@@ -51,12 +51,13 @@
     </div>
 
     <div style="display:grid;gap:14px;align-content:start;min-width:0">
-      <div class="card">
+      <div class="card flush c-ex">
         <div class="card-h"><span class="t">Exchanges</span></div>
         <div class="two" id="exs"></div>
+        <div class="bks"><div class="bkc"><div class="bkh"><b id="bkT0">—</b><span id="bkS0">—</span></div><div class="bk" id="bk0"></div></div><div class="bkc"><div class="bkh"><b id="bkT1">—</b><span id="bkS1">—</span></div><div class="bk" id="bk1"></div></div></div>
       </div>
-      <div class="card">
-        <div class="card-h"><span class="t">Spread calculator</span><span class="chip sm" id="cMode">simulation</span></div>
+      <div class="card c-calc">
+        <div class="card-h" style="padding:0 0 12px"><span class="t">Spread calculator</span><span class="chip sm" id="cMode">simulation</span></div>
         <div class="calc">
           <div>
             <div class="cap"><span>Entry prices · <span id="cAuto">live</span></span><button class="lnk" id="cLive" type="button" hidden>Use live prices</button></div>
@@ -86,28 +87,21 @@
     </div>
   </section>
 
-  <section class="books rise" style="--d:4">
-    <div class="card flush"><div class="card-h"><span class="t" id="bkT0">Long book</span><span class="chip sm" id="bkS0">—</span></div><div class="bk" id="bk0"></div></div>
-    <div class="card flush"><div class="card-h"><span class="t" id="bkT1">Short book</span><span class="chip sm" id="bkS1">—</span></div><div class="bk" id="bk1"></div></div>
-  </section>
 </main>
 </div>
 
-<script src="lwc.js?v=13"></script>
-<script src="autocomplete.js?v=13"></script>
-<script src="shared.js?v=13"></script>
+<script src="lwc.js?v=14"></script>
+<script src="autocomplete.js?v=14"></script>
+<script src="shared.js?v=14"></script>
 <script>
 (function(){
   AX.init("spread", { ticker: false });
   document.getElementById("back").innerHTML = AX.icon("back");
   var P = new URLSearchParams(location.search);
   var sym = AX.base(P.get("symbol") || "BTC"), LG = P.get("long") || "binance:fut", SH = P.get("short") || "okx:fut";
-  var KEY = sym + "|" + LG + "|" + SH;
-  var lg = LG.split(":"), sh = SH.split(":");
+  var KEY = "", lg = [], sh = [];
   document.getElementById("pSym").textContent = sym;
   document.getElementById("pIco").innerHTML = AX.ico(sym);
-  document.getElementById("pSub").textContent = AX.exName(lg[0]) + (lg[1] === "spot" ? " spot" : "") + " ↔ " + AX.exName(sh[0]) + (sh[1] === "spot" ? " spot" : "");
-  document.title = "AXION TERMINAL — " + sym + " " + AX.exName(lg[0]) + "/" + AX.exName(sh[0]);
 
   var D = null, ms = 1000, timer = 0, stopped = false;
   function $(id){ return document.getElementById(id); }
@@ -193,8 +187,10 @@
   }
   AX.seg($("rgSeg"), function(v){ rg = +v; applyRange(); });
   function loadHist(){
+    var kk = KEY;
     fetch("/api/hist?symbol=" + encodeURIComponent(sym) + "&long=" + encodeURIComponent(LG) + "&short=" + encodeURIComponent(SH) + "&minutes=1440", { cache: "no-store" })
       .then(function(r){ return r.json(); }).then(function(j){
+        if (kk !== KEY) return;
         if (!j || !j.t || !j.t.length){ $("hNote").textContent = "No history from the exchanges for this pair — chart fills live."; return; }
         var live = hist; // points collected while history was loading
         var e = [], x = [], first = live.e.length ? live.e[0].time : Infinity;
@@ -232,7 +228,7 @@
       setT("e" + i + "v", AX.vol(l.vol24h));
       setT("e" + i + "b", bs.toFixed(3) + "%");
       if (fut){
-        setT("t" + i + "fr", sgn(l.rate, 4), cls(l.rate)); setT("t" + i + "fh", l.hours + "h");
+        setT("t" + i + "fr", sgn(l.rate, 4), l.rate > 0 ? "dn" : l.rate < 0 ? "up" : ""); setT("t" + i + "fh", l.hours + "h");
         setT("e" + i + "f", sgn(l.rate, 4), l.rate > 0 ? "dn" : l.rate < 0 ? "up" : ""); setT("e" + i + "i", l.hours + "h");
         ["t" + i + "fn", "e" + i + "n"].forEach(function(id){ var el = $(id), v = String(l.next || ""); if (el.getAttribute("data-next") !== v) el.setAttribute("data-next", v); });
       }
@@ -247,7 +243,7 @@
     $("ptb").innerHTML = legs.map(function(l, i){
       var url = AX.exUrl(l.ex, l.type, sym), spot = l.type === "spot", r = i ? ["SHORT", "s"] : ["LONG", "l"];
       var fund = spot ? '<span class="mu">—</span>' : '<span id="t' + i + 'fr"></span> <span class="mu"><span id="t' + i + 'fh"></span> · <span id="t' + i + 'fn" data-next="">—</span></span>';
-      return '<tr><td><span class="role ' + r[1] + '">' + r[0] + '</span></td>' +
+      return '<tr><td><span class="role ' + r[1] + '" data-s="' + r[0].charAt(0) + '">' + r[0] + '</span></td>' +
         '<td><span class="xcell"><a class="xl" href="' + url + '" target="_blank" rel="noopener" title="Open ' + AX.esc(sym) + " on " + AX.esc(AX.exName(l.ex)) + '">' + AX.xt(l.ex) + '<span class="n">' + AX.esc(AX.exName(l.ex)) + '</span><span class="tg' + (spot ? " s" : "") + '">' + (spot ? "SPOT" : "FUTURES") + '</span></a>' +
         '<button class="xa" type="button" data-xp="' + i + '" aria-label="Other exchanges with ' + AX.esc(sym) + '" aria-expanded="false">' + AX.icon("chevd") + "</button></span></td>" +
         '<td><a class="xl" href="' + url + '" target="_blank" rel="noopener"><span class="p" id="t' + i + 'p"></span></a></td>' +
@@ -255,7 +251,7 @@
     }).join("");
     $("exs").innerHTML = legs.map(function(l, i){
       var url = AX.exUrl(l.ex, l.type, sym), fut = l.type === "fut";
-      return '<div class="exc"><b><span class="xcell"><a class="xl" href="' + url + '" target="_blank" rel="noopener">' + AX.xt(l.ex) + '<span class="n">' + AX.esc(AX.exName(l.ex)) + "</span></a>" +
+      return '<div class="exc ' + (i ? "s" : "l") + '"><b><span class="xcell"><span class="ar ' + (i ? "s" : "l") + '">' + AX.icon(i ? "down" : "up") + '</span><a class="xl" href="' + url + '" target="_blank" rel="noopener">' + AX.xt(l.ex) + '<span class="n">' + AX.esc(AX.exName(l.ex)) + "</span></a>" +
         '<button class="xa" type="button" data-xp="' + i + '" aria-label="Other exchanges with ' + AX.esc(sym) + '" aria-expanded="false">' + AX.icon("chevd") + "</button></span></b>" +
         '<div><span>24h volume</span><span id="e' + i + 'v">—</span></div>' +
         "<div><span>Funding</span>" + (fut ? '<span id="e' + i + 'f">—</span>' : "<span>—</span>") + "</div>" +
@@ -265,30 +261,34 @@
     }).join("");
   }
   document.addEventListener("click", function(e){
-    var b = e.target.closest("[data-xp]"); if (b) AX.exPop(b, sym, [LG, SH]);
+    var b = e.target.closest("[data-xp]"); if (!b) return;
+    var own = +b.getAttribute("data-xp");
+    AX.exPop(b, sym, [LG, SH], function(ex, type){
+      var k = ex + ":" + type;
+      if (k === (own ? SH : LG)) return;
+      if (k === (own ? LG : SH)){ AX.toast("Already selected on the other side", false); return; }
+      setLegs(own ? LG : k, own ? k : SH);
+    }, own);
   });
 
-  /* ── order books ── */
+  /* ── order books (5 levels each side, inside the Exchanges card) ── */
+  function usdk(v){ return v >= 1000 ? AX.vol(v) : "$" + v.toFixed(2); }
   function renderBook(i, l){
-    var N = 10, asks = l.asks.slice(0, N), bids = l.bids.slice(0, N);
-    var cum = function(a){ var c = 0; return a.map(function(r){ c += r[1]; return c; }); };
-    var ca = cum(asks), cb = cum(bids), mx = Math.max(ca[ca.length - 1] || 0, cb[cb.length - 1] || 0, 1e-12);
-    var row = function(r, c, k){ return '<div class="bk-r ' + k + '"><i style="width:100%;transform:scaleX(' + (c / mx).toFixed(3) + ')"></i><span>' + AX.plain(r[0]) + "</span><span>" + AX.plain(r[1]) + "</span><span>" + AX.plain(r[0] * r[1]) + "</span></div>"; };
+    var N = 5, asks = l.asks.slice(0, N), bids = l.bids.slice(0, N);
+    var val = function(r){ return r[0] * r[1]; };
+    var mx = Math.max.apply(null, asks.concat(bids).map(val).concat([1e-12]));
+    var row = function(r, k){ return '<div class="bk-r ' + k + '"><i style="width:100%;transform:scaleX(' + Math.min(1, val(r) / mx).toFixed(3) + ')"></i><span>' + AX.plain(r[0]) + "</span><span>" + usdk(val(r)) + "</span></div>"; };
     var bid = bids[0] ? bids[0][0] : 0, ask = asks[0] ? asks[0][0] : 0, mid = (bid + ask) / 2;
-    $("bk" + i).innerHTML = '<div class="bk-h"><span>Price</span><span>Size (' + AX.esc(sym) + ")</span><span>Total ($)</span></div>" +
-      asks.slice().reverse().map(function(r, k){ return row(r, ca[asks.length - 1 - k], "a"); }).join("") +
-      '<div class="bk-mid"><span>' + AX.plain(mid) + '</span><span class="mu">spread ' + (mid ? ((ask - bid) / mid * 100).toFixed(3) : "—") + "%</span></div>" +
-      bids.map(function(r, k){ return row(r, cb[k], "b"); }).join("");
-    $("bkT" + i).innerHTML = (i === 0 ? "Long · " : "Short · ") + AX.esc(AX.exName(l.ex)) + (l.type === "spot" ? " spot" : "");
-    $("bkS" + i).textContent = i === 0 ? "BUY at ask" : "SELL at bid";
+    $("bk" + i).innerHTML = asks.slice().reverse().map(function(r){ return row(r, "a"); }).join("") + '<div class="bk-sep"></div>' + bids.map(function(r){ return row(r, "b"); }).join("");
+    setT("bkT" + i, AX.exName(l.ex) + (l.type === "spot" ? " spot" : ""));
+    setT("bkS" + i, "Spread " + (mid ? ((ask - bid) / mid * 100).toFixed(3) : "—") + "%");
   }
 
   /* ── calculator + simulated position (all numbers recomputed from the live books on every poll) ── */
-  var unit = "usd", PK = "axion-pos:" + KEY, pos = null, man = { l: false, s: false };
-  try { pos = JSON.parse(localStorage.getItem(PK) || "null"); } catch (e) {}
+  var unit = "usd", PK = "", pos = null, man = { l: false, s: false };
+  function loadPos(){ PK = "axion-pos:" + KEY; pos = null; try { pos = JSON.parse(localStorage.getItem(PK) || "null"); } catch (e) {} }
   function savePos(){ try { if (pos) localStorage.setItem(PK, JSON.stringify(pos)); else localStorage.removeItem(PK); } catch (e) {} }
   function xlab(l, role){ return AX.xt(l.ex) + "<b>" + role + " · " + AX.esc(AX.exName(l.ex)) + (l.type === "spot" ? " spot" : "") + "</b>"; }
-  $("cLbL").innerHTML = xlab({ ex: lg[0], type: lg[1] }, "Long"); $("cLbS").innerHTML = xlab({ ex: sh[0], type: sh[1] }, "Short");
   function fp(v){ if (!(v > 0)) return ""; var s = String(+v.toPrecision(7)); if (/e/.test(s)) s = v.toFixed(10).replace(/0+$/, ""); return s; }
   function num(el){ var a = parseFloat(String(el.value).replace(",", ".")); return a > 0 ? a : 0; }
   /* prices start as the latest exchange prices (Long = best ask, Short = best bid) until the user types their own */
@@ -401,18 +401,35 @@
   function poll(){
     if (stopped) return;
     if (document.hidden || busy){ timer = setTimeout(poll, 400); return; }
-    busy = true; var t0 = performance.now();
-    fetch(url, { cache: "no-store" }).then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); }).then(function(d){
+    busy = true; var t0 = performance.now(), my = url;
+    fetch(my, { cache: "no-store" }).then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); }).then(function(d){
+      if (my !== url) return;
       D = d; bad = 0;
       $("lat").textContent = Math.round(performance.now() - t0) + "ms";
       AX.live($("live"), "ok", "LIVE");
       renderHead(d); renderBook(0, d.long); renderBook(1, d.short); calc();
     }).catch(function(){ bad++; AX.live($("live"), "err", bad > 2 ? "NO DATA" : "RETRY"); if (!D && !built) $("ptb").innerHTML = '<tr><td colspan="7" class="mu">Waiting for exchange data…</td></tr>'; })
-    .then(function(){ busy = false; timer = setTimeout(poll, Math.max(250, ms - (performance.now() - t0))); });
+    .then(function(){ busy = false; if (my !== url) return; timer = setTimeout(poll, Math.max(250, ms - (performance.now() - t0))); });
+  }
+  /* (re)select the two legs: everything on the page follows the chosen exchanges */
+  function setLegs(L, S, first){
+    LG = L; SH = S; lg = L.split(":"); sh = S.split(":"); KEY = sym + "|" + L + "|" + S;
+    $("pSub").textContent = AX.exName(lg[0]) + (lg[1] === "spot" ? " spot" : "") + " ↔ " + AX.exName(sh[0]) + (sh[1] === "spot" ? " spot" : "");
+    document.title = "AXION TERMINAL — " + sym + " " + AX.exName(lg[0]) + "/" + AX.exName(sh[0]);
+    $("cLbL").innerHTML = xlab({ ex: lg[0], type: lg[1] }, "Long"); $("cLbS").innerHTML = xlab({ ex: sh[0], type: sh[1] }, "Short");
+    loadPos(); man = { l: false, s: false }; $("cPL").value = ""; $("cPS").value = ""; $("cKv").innerHTML = "";
+    url = "/api/pair?symbol=" + encodeURIComponent(sym) + "&long=" + encodeURIComponent(L) + "&short=" + encodeURIComponent(S);
+    try { history.replaceState(null, "", "?symbol=" + encodeURIComponent(sym) + "&long=" + encodeURIComponent(L) + "&short=" + encodeURIComponent(S)); } catch (e) {}
+    if (!first){
+      D = null; built = false; prePaint = -1; hist = { e: [], x: [] }; pxMap = {};
+      if (sE){ sE.setData([]); sX.setData([]); }
+      $("hNote").textContent = ""; AX.live($("live"), "ok", "LOADING");
+      clearTimeout(timer);
+    }
+    loadHist(); poll();
   }
   initChart();
-  loadHist();
-  poll();
+  setLegs(LG, SH, true);
 })();
 </script>
 </body></html>

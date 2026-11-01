@@ -86,6 +86,7 @@
     clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
     filter: '<path d="M4 7h9M18 7h2M4 17h2M11 17h9"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="8.5" cy="17" r="2.3"/>',
     cv: '<path d="m6 9 6 6 6-6"/>',
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
     swap: '<path d="M8 4v16M8 20l-3.5-3.5M8 20l3.5-3.5"/><path d="M16 20V4M16 4l-3.5 3.5M16 4l3.5 3.5"/>'
   };
   AX.icon = function (n, cls) {
@@ -196,7 +197,7 @@
   var XR = {};
   function xsrc(k, n) {
     var d = XD[k]; if (!d) return null;
-    if (n === 0) return "ex/" + k + ".png?v=13";
+    if (n === 0) return "ex/" + k + ".png?v=14";
     if (n === 1 && d[1]) return "https://s2.coinmarketcap.com/static/img/exchanges/64x64/" + d[1] + ".png";
     if (n === 2 || (n === 1 && !d[1])) return "https://www.google.com/s2/favicons?domain=" + d[0] + "&sz=128";
     return null;
@@ -238,7 +239,7 @@
   document.addEventListener("click", function (e) { if (XP && !XP.contains(e.target) && !e.target.closest("[data-xp]")) xpClose(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") xpClose(); });
   window.addEventListener("resize", xpClose);
-  AX.exPop = function (btn, sym, cur) {
+  AX.exPop = function (btn, sym, cur, onPick, own) {
     var was = XP && XP._b === btn; xpClose(); if (was) return;
     var el = document.createElement("div"); el.className = "xpop"; el._b = btn; XP = el;
     btn.setAttribute("aria-expanded", "true");
@@ -258,11 +259,16 @@
         return '<span class="' + (r.rate > 0 ? "dn" : r.rate < 0 ? "up" : "") + '">' + (r.rate > 0 ? "+" : "") + r.rate.toFixed(4) + '%</span> <span class="mu">' + r.hours + "h</span>";
       };
       el.querySelector(".xp-b").innerHTML = rows.length ? '<div class="xp-r xp-th"><span>Ex</span><span>Last</span><span>Vol</span><span>Fund</span></div>' + rows.map(function (r) {
-        var on = cur.indexOf(r.ex + ":" + r.type) > -1;
-        return '<a class="xp-r' + (on ? " cur" : "") + '" href="' + AX.exUrl(r.ex, r.type, sym) + '" target="_blank" rel="noopener"><span class="xp-x">' + AX.xt(r.ex) + "<b>" + AX.esc(AX.exName(r.ex)) + '</b><i class="tg' + (r.type === "spot" ? " s" : "") + '">' + (r.type === "spot" ? "SPOT" : "FUT") + "</i></span><span>" + AX.plain(r.price) + "</span><span>" + AX.vol(r.vol) + "</span><span>" + f(r) + "</span></a>";
+        var key = r.ex + ":" + r.type, on = onPick ? key === cur[own] : cur.indexOf(key) > -1, dis = onPick && key === cur[1 - own];
+        var open = onPick ? '<button type="button" class="xp-r' + (on ? " cur" : "") + (dis ? " dis" : "") + '" data-k="' + key + '">' : '<a class="xp-r' + (on ? " cur" : "") + '" href="' + AX.exUrl(r.ex, r.type, sym) + '" target="_blank" rel="noopener">';
+        return open + '<span class="xp-x">' + AX.xt(r.ex) + "<b>" + AX.esc(AX.exName(r.ex)) + '</b><i class="tg' + (r.type === "spot" ? " s" : "") + '">' + (r.type === "spot" ? "SPOT" : "FUT") + "</i></span><span>" + AX.plain(r.price) + "</span><span>" + AX.vol(r.vol) + "</span><span>" + f(r) + "</span>" + (onPick ? "</button>" : "</a>");
       }).join("") : '<div class="xp-e">No other listings found</div>';
       place();
     };
+    el.addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-k]"); if (!b || !onPick) return;
+      var k = b.getAttribute("data-k").split(":"); xpClose(); onPick(k[0], k[1]);
+    });
     var c = XC[sym];
     if (c && Date.now() - c.t < 15000) { paint(c.d); return; }
     fetch("/api/tokex?symbol=" + encodeURIComponent(sym), { cache: "no-store" }).then(function (r) { return r.json(); })
@@ -581,11 +587,23 @@
       '<span class="brand-t"><b>AXION</b><i>TERMINAL</i></span></a>' +
       '<nav class="nav-links" id="navLinks" aria-label="Main">' +
       NAV.map(function (n) { return '<a href="' + n[1] + '"' + (n[0] === page ? ' aria-current="page"' : "") + ">" + n[2] + "</a>"; }).join("") + "</nav>" +
-      '<div class="nav-r"><button type="button" class="nav-search" id="navSearchBtn" aria-label="Search" aria-expanded="false">' + AX.icon("search") + '<span>Search</span></button><button type="button" class="theme-toggle" id="themeBtn" aria-pressed="true">' + AX.icon("moon", "icon-moon") + AX.icon("sun", "icon-sun") + "</button></div>" +
+      '<div class="nav-r"><button type="button" class="nav-search" id="navSearchBtn" aria-label="Search" aria-expanded="false">' + AX.icon("search") + '<span>Search</span></button><button type="button" class="theme-toggle" id="themeBtn" aria-pressed="true">' + AX.icon("moon", "icon-moon") + AX.icon("sun", "icon-sun") + '</button><button type="button" class="theme-toggle menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false">' + AX.icon("menu") + "</button></div>" +
       "</div></header>" +
       '<div class="spal-s" id="spalS" hidden></div><div class="spal" id="spal" hidden><label class="search">' + AX.icon("search") + '<input id="navSearch" placeholder="Search token — BTC, ETH, SOL…" autocomplete="off" spellcheck="false"></label></div>' +
       (opts.ticker === false ? "" : '<div class="ticker rise" style="--d:2"><div class="tk-track" id="tkTrack"><div class="tk-load">Loading market data…</div></div></div>');
     while (top.lastChild) shell.insertBefore(top.lastChild, shell.firstChild);
+
+    /* mobile: side panel with every page (opened from the ☰ button in the bottom bar) */
+    var side = document.createElement("div");
+    side.innerHTML = '<div class="side-s" id="sideS"></div><aside class="side" id="side" aria-label="Pages"><div class="side-h"><span>AXION <b>TERMINAL</b></span><button type="button" class="icon-btn" id="sideX" aria-label="Close">' + AX.icon("close") + "</button></div>" +
+      NAV.map(function (n) { return '<a href="' + n[1] + '"' + (n[0] === page ? ' aria-current="page"' : "") + ">" + AX.icon(n[0]) + "<span>" + n[2] + "</span></a>"; }).join("") + "</aside>";
+    while (side.firstChild) document.body.appendChild(side.firstChild);
+    var sideEl = document.getElementById("side"), sideS = document.getElementById("sideS"), menuB = document.getElementById("menuBtn");
+    function sideSet(on) { sideEl.classList.toggle("on", on); sideS.classList.toggle("on", on); menuB.setAttribute("aria-expanded", on ? "true" : "false"); }
+    menuB.addEventListener("click", function () { sideSet(!sideEl.classList.contains("on")); });
+    sideS.addEventListener("click", function () { sideSet(false); });
+    document.getElementById("sideX").addEventListener("click", function () { sideSet(false); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") sideSet(false); });
 
     /* theme toggle */
     var tb = document.getElementById("themeBtn");
