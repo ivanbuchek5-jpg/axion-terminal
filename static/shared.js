@@ -198,7 +198,7 @@
   var XR = {};
   function xsrc(k, n) {
     var d = XD[k]; if (!d) return null;
-    if (n === 0) return "ex/" + k + ".png?v=16";
+    if (n === 0) return "ex/" + k + ".png?v=17";
     if (n === 1 && d[1]) return "https://s2.coinmarketcap.com/static/img/exchanges/64x64/" + d[1] + ".png";
     if (n === 2 || (n === 1 && !d[1])) return "https://www.google.com/s2/favicons?domain=" + d[0] + "&sz=128";
     return null;
@@ -601,7 +601,7 @@
       NAV.map(function (n) { return '<a href="' + n[1] + '"' + (n[0] === page ? ' aria-current="page"' : "") + ">" + AX.icon(n[0]) + "<span>" + n[2] + "</span></a>"; }).join("") + "</aside>";
     while (side.firstChild) document.body.appendChild(side.firstChild);
     var sideEl = document.getElementById("side"), sideS = document.getElementById("sideS"), menuB = document.getElementById("menuBtn");
-    function sideSet(on) { sideEl.classList.toggle("on", on); sideS.classList.toggle("on", on); menuB.setAttribute("aria-expanded", on ? "true" : "false"); }
+    function sideSet(on) { document.documentElement.classList.toggle("side-open", on); sideEl.classList.toggle("on", on); sideS.classList.toggle("on", on); menuB.setAttribute("aria-expanded", on ? "true" : "false"); }
     menuB.addEventListener("click", function () { sideSet(!sideEl.classList.contains("on")); });
     sideS.addEventListener("click", function () { sideSet(false); });
     document.getElementById("sideX").addEventListener("click", function () { sideSet(false); });
