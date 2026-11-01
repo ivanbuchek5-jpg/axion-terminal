@@ -620,7 +620,6 @@ button.xp-r.dis{opacity:.4;pointer-events:none}
 @media(hover:hover) and (pointer:fine){.flip:hover{border-color:var(--accent-text);color:var(--accent-text)}}
 @media(min-width:760px){.exg{gap:14px}.exg .exc{padding:12px 16px}.flip{width:34px;height:34px}}
 @media(max-width:859px){
-  .c-chart{order:1}.c-calc{order:2}.c-bk{order:3}
   .card.ph{padding:10px 12px;gap:8px}
   .ph-t{gap:10px}
   .ph-t .icon-btn{width:34px;height:34px;border-radius:10px}
@@ -637,3 +636,17 @@ button.xp-r.dis{opacity:.4;pointer-events:none}
   .xa{width:24px;height:24px}
   .flip{width:28px;height:28px}
 }
+
+/* ── v16: books under chart, neutral cards, volume tiers, plain square arrow ── */
+.pgrid>div:last-child{display:contents!important}
+.pgrid{grid-template-areas:"ch" "bk" "ca"}
+.c-chart{grid-area:ch;order:0}.c-bk{grid-area:bk;order:0}.c-calc{grid-area:ca;order:0;align-self:start}
+@media(min-width:1100px){.pgrid{grid-template-areas:"ch ca" "bk ca";grid-template-rows:auto 1fr}}
+.exc.l,.exc.s{background:var(--surface2)}
+:root{--v-lo:#E5484D;--v-mid:#E8B93A;--v-hi:#4FAE7B}
+:root[data-theme=light]{--v-lo:#D6342C;--v-mid:#B7860B;--v-hi:#2E8B57}
+.v-lo{color:var(--v-lo)}.v-mid{color:var(--v-mid)}.v-hi{color:var(--v-hi)}
+.xa{width:26px;height:26px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);transition:none;transform:none!important}
+.xa[aria-expanded=true]{color:var(--fg);transform:none}
+@media(hover:hover) and (pointer:fine){.xa:hover{color:var(--fg);background:var(--surface2)}}
+@media(max-width:859px){.xa{width:24px;height:24px;border-radius:7px}}

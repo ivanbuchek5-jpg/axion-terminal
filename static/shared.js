@@ -131,6 +131,7 @@
     if (n >= 1e3) return "$" + f(n / 1e3) + "k";
     return "$" + f(n);
   };
+  AX.volc = function (n) { n = Number(n); return !n || n < 1 ? "" : n < 5e5 ? "v-lo" : n < 1.5e6 ? "v-mid" : "v-hi"; };
   AX.pct = function (n, d) {
     n = Number(n);
     if (isNaN(n)) return "—";
@@ -197,7 +198,7 @@
   var XR = {};
   function xsrc(k, n) {
     var d = XD[k]; if (!d) return null;
-    if (n === 0) return "ex/" + k + ".png?v=15";
+    if (n === 0) return "ex/" + k + ".png?v=16";
     if (n === 1 && d[1]) return "https://s2.coinmarketcap.com/static/img/exchanges/64x64/" + d[1] + ".png";
     if (n === 2 || (n === 1 && !d[1])) return "https://www.google.com/s2/favicons?domain=" + d[0] + "&sz=128";
     return null;
@@ -262,7 +263,7 @@
       el.querySelector(".xp-b").innerHTML = rows.length ? '<div class="xp-r xp-th"><span>Ex</span><span>Last</span><span>Vol</span><span>Fund</span></div>' + rows.map(function (r) {
         var key = r.ex + ":" + r.type, on = onPick ? key === cur[own] : cur.indexOf(key) > -1, dis = onPick && key === cur[1 - own];
         var open = onPick ? '<button type="button" class="xp-r' + (on ? " cur" : "") + (dis ? " dis" : "") + '" data-k="' + key + '">' : '<a class="xp-r' + (on ? " cur" : "") + '" href="' + AX.exUrl(r.ex, r.type, sym) + '" target="_blank" rel="noopener">';
-        return open + '<span class="xp-x">' + AX.xt(r.ex) + "<b>" + AX.esc(AX.exName(r.ex)) + '</b><i class="tg' + (r.type === "spot" ? " s" : "") + '">' + (r.type === "spot" ? "SPOT" : "FUT") + "</i></span><span>" + AX.plain(r.price) + "</span><span>" + AX.vol(r.vol) + "</span><span>" + f(r) + "</span>" + (onPick ? "</button>" : "</a>");
+        return open + '<span class="xp-x">' + AX.xt(r.ex) + "<b>" + AX.esc(AX.exName(r.ex)) + '</b><i class="tg' + (r.type === "spot" ? " s" : "") + '">' + (r.type === "spot" ? "SPOT" : "FUT") + "</i></span><span>" + AX.plain(r.price) + "</span><span class=\"" + AX.volc(r.vol) + "\">" + AX.vol(r.vol) + "</span><span>" + f(r) + "</span>" + (onPick ? "</button>" : "</a>");
       }).join("") : '<div class="xp-e">No other listings found</div>';
       place();
     };
