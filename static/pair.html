@@ -10,31 +10,29 @@
 <script>(function(){var t=null;try{t=localStorage.getItem('axion-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#E9EAEC':'#25272D')})()</script>
 <script>(function(){var d=document.documentElement;try{var t=+sessionStorage.getItem('axion-pt');sessionStorage.removeItem('axion-pt');if(t&&Date.now()-t<10000&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){d.classList.add('pt-in');setTimeout(function(){d.classList.remove('pt-in')},4500)}}catch(e){}})()</script>
 <style>html{background:#25272D}html[data-theme=light]{background:#E9EAEC}html.pt-in{background:#0E0F11}html:not(.css) body{visibility:hidden}</style>
-<link rel="stylesheet" href="axion.css?v=14" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
+<link rel="stylesheet" href="axion.css?v=15" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
 <script>setTimeout(function(){document.documentElement.classList.add("css")},3000)</script>
 </head>
 <body>
 <div id="pt" aria-hidden="true"><div class="pt-glow"></div><div class="pt-core"><div class="pt-logo"></div><div class="pt-word">AXION <b>TERMINAL</b></div></div><div class="pt-bar"><i></i></div></div>
 <div class="shell">
 <main>
-  <section class="card rise" style="--d:2">
-    <div class="ph">
-      <div class="row-f" style="gap:12px">
-        <a class="icon-btn" href="spread.html" aria-label="Back" style="width:40px;height:40px;border-radius:12px" id="back"></a>
-        <span class="sym"><span class="ico" id="pIco" style="width:42px;height:42px;border-radius:13px">—</span><span><b style="font-size:1.25rem"><span id="pSym">—</span><span id="pPre"></span></b><small id="pSub">—</small></span></span>
-        <span class="sp"></span>
-        <span class="live" id="live"><i></i>LOADING</span>
-        <span class="cdn" id="lat" title="Round-trip latency">—</span>
-      </div>
-      <div class="big-sp">
-        <div><div class="k">Entry</div><div class="v" id="vEntry">—</div></div>
-        <div><div class="k">Exit</div><div class="v" id="vExit">—</div></div>
-        <div><div class="k">Funding 8h</div><div class="v" id="vFund">—</div></div>
-        <div><div class="k">Fees</div><div class="v mu" id="vFee">—</div></div>
-      </div>
-      <div class="ptbl-w"><table class="ptbl"><thead><tr><th>Side</th><th>Exchange</th><th>Price</th><th>Bid / Ask</th><th>Spot</th><th>Funding</th><th>24h volume</th></tr></thead><tbody id="ptb"></tbody></table></div>
+  <section class="card rise ph" style="--d:2">
+    <div class="row-f ph-t">
+      <a class="icon-btn" href="spread.html" aria-label="Back" id="back"></a>
+      <span class="sym"><span class="ico" id="pIco">—</span><span><b><span id="pSym">—</span><span id="pPre"></span></b><small id="pSub">—</small></span></span>
+      <span class="sp"></span>
+      <span class="live" id="live"><i></i>LOADING</span>
+      <span class="cdn" id="lat" hidden>—</span>
+    </div>
+    <div class="big-sp">
+      <div><div class="k">Fund</div><div class="v" id="vFund">—</div></div>
+      <div><div class="k">Entry</div><div class="v" id="vEntry">—</div></div>
+      <div><div class="k">Exit</div><div class="v" id="vExit">—</div></div>
     </div>
   </section>
+
+  <section class="exg rise" style="--d:3" id="exs"></section>
 
   <section class="pgrid rise" style="--d:3">
     <div class="card c-chart" style="min-width:0">
@@ -51,11 +49,6 @@
     </div>
 
     <div style="display:grid;gap:14px;align-content:start;min-width:0">
-      <div class="card flush c-ex">
-        <div class="card-h"><span class="t">Exchanges</span></div>
-        <div class="two" id="exs"></div>
-        <div class="bks"><div class="bkc"><div class="bkh"><b id="bkT0">—</b><span id="bkS0">—</span></div><div class="bk" id="bk0"></div></div><div class="bkc"><div class="bkh"><b id="bkT1">—</b><span id="bkS1">—</span></div><div class="bk" id="bk1"></div></div></div>
-      </div>
       <div class="card c-calc">
         <div class="card-h" style="padding:0 0 12px"><span class="t">Spread calculator</span><span class="chip sm" id="cMode">simulation</span></div>
         <div class="calc">
@@ -84,15 +77,19 @@
           <div class="btns3" id="cBtnsB" hidden><a class="btn" href="spread.html" id="cBack">Back</a><button class="btn ghost-g" id="cAdd" type="button">Increase</button><button class="btn ghost-r" id="cClose" type="button">Close position</button></div>
         </div>
       </div>
+      <div class="card flush c-bk">
+        <div class="card-h"><span class="t">Order books</span></div>
+        <div class="bks"><div class="bkc"><div class="bkh"><b id="bkT0">—</b><span id="bkS0">—</span></div><div class="bk" id="bk0"></div></div><div class="bkc"><div class="bkh"><b id="bkT1">—</b><span id="bkS1">—</span></div><div class="bk" id="bk1"></div></div></div>
+      </div>
     </div>
   </section>
 
 </main>
 </div>
 
-<script src="lwc.js?v=14"></script>
-<script src="autocomplete.js?v=14"></script>
-<script src="shared.js?v=14"></script>
+<script src="lwc.js?v=15"></script>
+<script src="autocomplete.js?v=15"></script>
+<script src="shared.js?v=15"></script>
 <script>
 (function(){
   AX.init("spread", { ticker: false });
@@ -208,29 +205,21 @@
   function renderHead(d){
     var t = tops(d); if (!t) return;
     var en = (t.bS - t.aL) / t.aL * 100, ex = (t.bL - t.aS) / t.aS * 100;
-    $("vEntry").textContent = sgn(en); $("vEntry").className = "v " + cls(en);
-    $("vExit").textContent = sgn(ex); $("vExit").className = "v " + cls(ex);
-    var per8 = function(l){ return l.type === "fut" ? l.rate / l.hours * 8 : 0; };
-    var fn = per8(d.short) - per8(d.long);
-    $("vFund").textContent = sgn(fn, 4); $("vFund").className = "v " + cls(fn);
-    var fees = (d.long.fee + d.short.fee) * 2;
-    $("vFee").textContent = fees.toFixed(3) + "%";
+    setT("vEntry", sgn(en), "v " + cls(en)); setT("vExit", sgn(ex), "v " + cls(ex));
+    var fr = function(l){ return l.type === "fut" ? l.rate : 0; };
+    var fn = fr(d.short) - fr(d.long);   /* actual funding the pair collects at the next payouts */
+    setT("vFund", sgn(fn), "v " + cls(fn));
     pushPoint(en, ex, (t.aL + t.bL) / 2, (t.aS + t.bS) / 2);
     if (!built){ buildHead(d); built = true; }
     var pre = d.pre ? 1 : 0; if (pre !== prePaint){ prePaint = pre; $("pPre").innerHTML = AX.pre(pre); }
     [d.long, d.short].forEach(function(l, i){
       var bid = l.bids[0] ? l.bids[0][0] : 0, ask = l.asks[0] ? l.asks[0][0] : 0, mid = (bid + ask) / 2;
       var bs = mid ? (ask - bid) / mid * 100 : 0, fut = l.type === "fut";
-      setT("t" + i + "p", AX.price(l.price || mid));
-      setT("t" + i + "b", AX.plain(bid) + " / " + AX.plain(ask));
-      setT("t" + i + "s", fut && l.spot ? AX.price(l.spot) : "—");
-      setT("t" + i + "v", AX.vol(l.vol24h));
-      setT("e" + i + "v", AX.vol(l.vol24h));
-      setT("e" + i + "b", bs.toFixed(3) + "%");
+      setT("e" + i + "a", AX.plain(ask)); setT("e" + i + "b", AX.plain(bid));
+      setT("e" + i + "v", AX.vol(l.vol24h)); setT("e" + i + "s", bs.toFixed(3) + "%");
       if (fut){
-        setT("t" + i + "fr", sgn(l.rate, 4), l.rate > 0 ? "dn" : l.rate < 0 ? "up" : ""); setT("t" + i + "fh", l.hours + "h");
         setT("e" + i + "f", sgn(l.rate, 4), l.rate > 0 ? "dn" : l.rate < 0 ? "up" : ""); setT("e" + i + "i", l.hours + "h");
-        ["t" + i + "fn", "e" + i + "n"].forEach(function(id){ var el = $(id), v = String(l.next || ""); if (el.getAttribute("data-next") !== v) el.setAttribute("data-next", v); });
+        var el = $("e" + i + "n"), v = String(l.next || ""); if (el.getAttribute("data-next") !== v) el.setAttribute("data-next", v);
       }
     });
     tick();
@@ -239,27 +228,22 @@
   var built = false, prePaint = -1;
   function setT(id, txt, c){ var el = $(id); if (!el) return; if (el.textContent !== txt) el.textContent = txt; if (c != null && el.className !== c) el.className = c; }
   function buildHead(d){
-    var legs = [d.long, d.short];
-    $("ptb").innerHTML = legs.map(function(l, i){
-      var url = AX.exUrl(l.ex, l.type, sym), spot = l.type === "spot", r = i ? ["SHORT", "s"] : ["LONG", "l"];
-      var fund = spot ? '<span class="mu">—</span>' : '<span id="t' + i + 'fr"></span> <span class="mu"><span id="t' + i + 'fh"></span> · <span id="t' + i + 'fn" data-next="">—</span></span>';
-      return '<tr><td><span class="role ' + r[1] + '" data-s="' + r[0].charAt(0) + '">' + r[0] + '</span></td>' +
-        '<td><span class="xcell"><a class="xl" href="' + url + '" target="_blank" rel="noopener" title="Open ' + AX.esc(sym) + " on " + AX.esc(AX.exName(l.ex)) + '">' + AX.xt(l.ex) + '<span class="n">' + AX.esc(AX.exName(l.ex)) + '</span><span class="tg' + (spot ? " s" : "") + '">' + (spot ? "SPOT" : "FUTURES") + '</span></a>' +
-        '<button class="xa" type="button" data-xp="' + i + '" aria-label="Other exchanges with ' + AX.esc(sym) + '" aria-expanded="false">' + AX.icon("chevd") + "</button></span></td>" +
-        '<td><a class="xl" href="' + url + '" target="_blank" rel="noopener"><span class="p" id="t' + i + 'p"></span></a></td>' +
-        '<td id="t' + i + 'b"></td><td id="t' + i + 's"></td><td>' + fund + '</td><td id="t' + i + 'v"></td></tr>';
-    }).join("");
-    $("exs").innerHTML = legs.map(function(l, i){
-      var url = AX.exUrl(l.ex, l.type, sym), fut = l.type === "fut";
-      return '<div class="exc ' + (i ? "s" : "l") + '"><b><span class="xcell"><span class="ar ' + (i ? "s" : "l") + '">' + AX.icon(i ? "down" : "up") + '</span><a class="xl" href="' + url + '" target="_blank" rel="noopener">' + AX.xt(l.ex) + '<span class="n">' + AX.esc(AX.exName(l.ex)) + "</span></a>" +
-        '<button class="xa" type="button" data-xp="' + i + '" aria-label="Other exchanges with ' + AX.esc(sym) + '" aria-expanded="false">' + AX.icon("chevd") + "</button></span></b>" +
+    var card = function(l, i){
+      var url = AX.exUrl(l.ex, l.type, sym), fut = l.type === "fut", dash = "<span>—</span>";
+      return '<div class="exc ' + (i ? "s" : "l") + '"><b><span class="ar ' + (i ? "s" : "l") + '">' + AX.icon(i ? "down" : "up") + '</span>' +
+        '<a class="xl" href="' + url + '" target="_blank" rel="noopener" title="Open ' + AX.esc(sym) + " on " + AX.esc(AX.exName(l.ex)) + '">' + AX.xt(l.ex) + '<span class="n">' + AX.esc(AX.exName(l.ex)) + '</span></a>' +
+        '<span class="tg' + (fut ? "" : " s") + '">' + (fut ? "FUT" : "SPOT") + '</span>' +
+        '<button class="xa" type="button" data-xp="' + i + '" aria-label="Other exchanges with ' + AX.esc(sym) + '" aria-expanded="false">' + AX.icon("chevd") + "</button></b>" +
+        '<div><span>Ask</span><span id="e' + i + 'a">—</span></div>' +
+        '<div><span>Bid</span><span id="e' + i + 'b">—</span></div>' +
+        "<div><span>Funding</span>" + (fut ? '<span><span id="e' + i + 'f">—</span> <span class="mu" id="e' + i + 'i"></span></span>' : dash) + "</div>" +
+        "<div><span>Next payout</span>" + (fut ? '<span id="e' + i + 'n" data-next="">—</span>' : dash) + "</div>" +
         '<div><span>24h volume</span><span id="e' + i + 'v">—</span></div>' +
-        "<div><span>Funding</span>" + (fut ? '<span id="e' + i + 'f">—</span>' : "<span>—</span>") + "</div>" +
-        "<div><span>Interval</span>" + (fut ? '<span id="e' + i + 'i">—</span>' : "<span>—</span>") + "</div>" +
-        "<div><span>Next payout</span>" + (fut ? '<span id="e' + i + 'n" data-next="">—</span>' : "<span>—</span>") + "</div>" +
-        '<div><span>Book spread</span><span id="e' + i + 'b">—</span></div></div>';
-    }).join("");
+        '<div><span>Book spread</span><span id="e' + i + 's">—</span></div></div>';
+    };
+    $("exs").innerHTML = card(d.long, 0) + card(d.short, 1) + '<button class="flip" type="button" id="flip" aria-label="Flip long and short" title="Flip long ⇄ short">' + AX.icon("converter") + "</button>";
   }
+  document.addEventListener("click", function(e){ if (e.target.closest("#flip")) setLegs(SH, LG); });
   document.addEventListener("click", function(e){
     var b = e.target.closest("[data-xp]"); if (!b) return;
     var own = +b.getAttribute("data-xp");
@@ -405,7 +389,7 @@
     fetch(my, { cache: "no-store" }).then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); }).then(function(d){
       if (my !== url) return;
       D = d; bad = 0;
-      $("lat").textContent = Math.round(performance.now() - t0) + "ms";
+      
       AX.live($("live"), "ok", "LIVE");
       renderHead(d); renderBook(0, d.long); renderBook(1, d.short); calc();
     }).catch(function(){ bad++; AX.live($("live"), "err", bad > 2 ? "NO DATA" : "RETRY"); if (!D && !built) $("ptb").innerHTML = '<tr><td colspan="7" class="mu">Waiting for exchange data…</td></tr>'; })

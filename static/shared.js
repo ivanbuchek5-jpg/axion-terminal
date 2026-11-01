@@ -197,14 +197,15 @@
   var XR = {};
   function xsrc(k, n) {
     var d = XD[k]; if (!d) return null;
-    if (n === 0) return "ex/" + k + ".png?v=14";
+    if (n === 0) return "ex/" + k + ".png?v=15";
     if (n === 1 && d[1]) return "https://s2.coinmarketcap.com/static/img/exchanges/64x64/" + d[1] + ".png";
     if (n === 2 || (n === 1 && !d[1])) return "https://www.google.com/s2/favicons?domain=" + d[0] + "&sz=128";
     return null;
   }
   AX.xt = function (k) {
     var e = AX.EX[k] || { c: "#555", t: "?" }, r = XR[k], n = r ? r.n : 0, u = xsrc(k, n);
-    return '<span class="xt' + (r && r.ok ? " has" : "") + (u ? "" : " no") + '" style="--xc:' + e.c + '"><b>' + e.t + "</b>" + (u ? '<img data-k="' + AX.esc(k) + '" data-n="' + n + '" src="' + u + '" alt="" referrerpolicy="no-referrer" decoding="async">' : "") + "</span>";
+    if (!u) return '<span class="xt no" style="--xc:' + e.c + '"><b>' + e.t + "</b></span>";
+    return '<span class="xt' + (r && r.ok ? " has" : "") + '" style="--xc:' + e.c + '" data-t="' + e.t + '"><img data-k="' + AX.esc(k) + '" data-n="' + n + '" src="' + u + '" alt="" referrerpolicy="no-referrer" decoding="async"></span>';
   };
   AX.pre = function (on) { return on ? '<span class="pre" data-tip="Premarket trading">PRE</span>' : ""; };
   /* exchange page of this exact token (type: "fut" | "spot") */
@@ -225,7 +226,7 @@
     if (!im || im.tagName !== "IMG" || !im.parentNode || !im.parentNode.classList.contains("xt")) return;
     var k = im.getAttribute("data-k"), n = (+im.getAttribute("data-n") || 0) + 1, u = xsrc(k, n);
     XR[k] = { n: n, ok: false };
-    if (u) { im.setAttribute("data-n", n); im.src = u; } else { var pn = im.parentNode; im.remove(); pn.classList.add("no"); }
+    if (u) { im.setAttribute("data-n", n); im.src = u; } else { var pn = im.parentNode; im.remove(); pn.classList.add("no"); pn.innerHTML = "<b>" + (pn.getAttribute("data-t") || "") + "</b>"; }
   }, true);
   document.addEventListener("load", function (e) {
     var im = e.target;
