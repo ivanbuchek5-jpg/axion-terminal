@@ -687,3 +687,17 @@ html.side-open,html.side-open body{overflow:hidden}
 .xa,.flip{background:#3F6FF2;border-color:#3F6FF2;color:#fff}
 .xa[aria-expanded=true]{color:#fff}
 @media(hover:hover) and (pointer:fine){.xa:hover,.flip:hover{background:#5A85F6;border-color:#5A85F6;color:#fff}}
+
+/* ── v19: desktop — chart | exchanges (top half) + order books (bottom half) fused into one window ── */
+@media(min-width:1100px){
+  .pgrid{column-gap:0;row-gap:0;grid-template-rows:minmax(0,1fr) minmax(0,1fr) auto;grid-template-areas:"ch ex" "ch bk" "ca .";align-items:stretch}
+  #sp-chart{height:clamp(520px,62vh,660px)}
+  .c-chart{border-radius:16px 0 0 16px;border-right:0}
+  .exg{gap:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:0 16px 0 0}
+  .exg .exc,.exg .exc.l,.exg .exc.s{background:transparent;border:0;border-radius:0;padding:12px 14px;align-content:space-between}
+  .exg .exc+.exc{border-left:1px solid var(--line)}
+  .c-bk{border-radius:0 0 16px 0;border-top:0;min-height:0}
+  .c-bk .card-h{padding:10px 14px 4px}
+  .c-bk .bkc{padding:6px 10px 8px}
+  .c-calc{margin-top:14px;align-self:start}
+}
