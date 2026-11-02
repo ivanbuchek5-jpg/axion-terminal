@@ -10,7 +10,7 @@
 <script>(function(){var t=null;try{t=localStorage.getItem('axion-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#E9EAEC':'#25272D')})()</script>
 <script>(function(){var d=document.documentElement;try{var t=+sessionStorage.getItem('axion-pt');sessionStorage.removeItem('axion-pt');if(t&&Date.now()-t<10000&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){d.classList.add('pt-in');setTimeout(function(){d.classList.remove('pt-in')},4500)}}catch(e){}})()</script>
 <style>html{background:#25272D}html[data-theme=light]{background:#E9EAEC}html.pt-in{background:#0E0F11}html:not(.css) body{visibility:hidden}</style>
-<link rel="stylesheet" href="axion.css?v=19" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
+<link rel="stylesheet" href="axion.css?v=20" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
 <script>setTimeout(function(){document.documentElement.classList.add("css")},3000)</script>
 </head>
 <body>
@@ -86,9 +86,9 @@
 </main>
 </div>
 
-<script src="lwc.js?v=19"></script>
-<script src="autocomplete.js?v=19"></script>
-<script src="shared.js?v=19"></script>
+<script src="lwc.js?v=20"></script>
+<script src="autocomplete.js?v=20"></script>
+<script src="shared.js?v=20"></script>
 <script>
 (function(){
   AX.init("spread", { ticker: false });
@@ -215,7 +215,7 @@
       var bid = l.bids[0] ? l.bids[0][0] : 0, ask = l.asks[0] ? l.asks[0][0] : 0, mid = (bid + ask) / 2;
       var bs = mid ? (ask - bid) / mid * 100 : 0, fut = l.type === "fut";
       setT("e" + i + "a", AX.plain(ask)); setT("e" + i + "b", AX.plain(bid));
-      setT("e" + i + "v", AX.vol(l.vol24h), AX.volc(l.vol24h)); setT("e" + i + "s", bs.toFixed(3) + "%");
+      setT("e" + i + "v", AX.vol(l.vol24h), AX.volc(l.vol24h)); setT("e" + i + "m", l.maxpos ? AX.vol(l.maxpos) : "—"); setT("e" + i + "s", bs.toFixed(3) + "%");
       if (fut){
         setT("e" + i + "f", sgn(l.rate, 4), l.rate > 0 ? "dn" : l.rate < 0 ? "up" : ""); setT("e" + i + "i", l.hours + "h");
         var el = $("e" + i + "n"), v = String(l.next || ""); if (el.getAttribute("data-next") !== v) el.setAttribute("data-next", v);
@@ -238,6 +238,7 @@
         "<div><span>Funding</span>" + (fut ? '<span><span id="e' + i + 'f">—</span> <span class="mu" id="e' + i + 'i"></span></span>' : dash) + "</div>" +
         "<div><span>Next payout</span>" + (fut ? '<span id="e' + i + 'n" data-next="">—</span>' : dash) + "</div>" +
         '<div><span>24h volume</span><span id="e' + i + 'v">—</span></div>' +
+        '<div><span>Max position</span><span id="e' + i + 'm">—</span></div>' +
         '<div><span>Book spread</span><span id="e' + i + 's">—</span></div></div>';
     };
     $("exs").innerHTML = card(d.long, 0) + card(d.short, 1) + '<button class="flip" type="button" id="flip" aria-label="Flip long and short" title="Flip long ⇄ short">' + AX.icon("converter") + "</button>";
@@ -257,7 +258,7 @@
   /* ── order books (5 levels each side, inside the Exchanges card) ── */
   function usdk(v){ return v >= 1000 ? AX.vol(v) : "$" + v.toFixed(2); }
   function renderBook(i, l){
-    var N = 5, asks = l.asks.slice(0, N), bids = l.bids.slice(0, N);
+    var N = 6, asks = l.asks.slice(0, N), bids = l.bids.slice(0, N);
     var val = function(r){ return r[0] * r[1]; };
     var mx = Math.max.apply(null, asks.concat(bids).map(val).concat([1e-12]));
     var row = function(r, k){ return '<div class="bk-r ' + k + '"><i style="width:100%;transform:scaleX(' + Math.min(1, val(r) / mx).toFixed(3) + ')"></i><span>' + AX.plain(r[0]) + "</span><span>" + usdk(val(r)) + "</span></div>"; };

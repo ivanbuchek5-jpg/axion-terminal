@@ -449,6 +449,55 @@ def _parse_leg(s):
     return (ex, typ) if ex in EXCH and typ in ("fut", "spot") else None
 
 
+def _mp_table():
+    """Per-exchange position caps from public contract info: {ex: {BASE: (unit, value)}}, unit 'usd' | 'coin'.
+    gate: risk_limit_max (true max position, USDT). binance/aster: LOT_SIZE.maxQty and mexc: maxVol (per-order caps, coins)."""
+    raw = _S["many"]({
+        "binance": (["https://fapi.binance.com/fapi/v1/exchangeInfo"], None),
+        "aster": (["https://fapi.asterdex.com/fapi/v1/exchangeInfo"], None),
+        "gate": ("https://api.gateio.ws/api/v4/futures/usdt/contracts", None),
+        "mexc": ("https://contract.mexc.com/api/v1/contract/detail", None),
+    })
+    out = {"binance": {}, "aster": {}, "gate": {}, "mexc": {}}
+    for ex in ("binance", "aster"):
+        for it in ((raw.get(ex) or {}).get("symbols") or []):
+            sy = it.get("symbol", "")
+            if not sy.endswith("USDT"):
+                continue
+            for f in it.get("filters", []):
+                if f.get("filterType") == "LOT_SIZE" and _f(f.get("maxQty")) > 0:
+                    out[ex][sy[:-4]] = ("coin", _f(f.get("maxQty")))
+    g = raw.get("gate")
+    for it in (g if isinstance(g, list) else []):
+        n = str(it.get("name", ""))
+        if n.endswith("_USDT") and _f(it.get("risk_limit_max")) > 0:
+            out["gate"][n[:-5]] = ("usd", _f(it.get("risk_limit_max")))
+    mx = (raw.get("mexc") or {}).get("data")
+    for it in (mx if isinstance(mx, list) else []):
+        n = str(it.get("symbol", ""))
+        if n.endswith("_USDT") and _f(it.get("maxVol")) > 0:
+            out["mexc"][n[:-5]] = ("coin", _f(it.get("maxVol")) * _f(it.get("contractSize"), 1))
+    return out if any(out.values()) else {}
+
+
+def _maxpos_usd(ex, b, price):
+    """Max position in USD the exchange allows for this futures market (0 = unknown)."""
+    try:
+        if ex == "okx":
+            def load():
+                d = _S["get"]("https://www.okx.com/api/v5/public/position-tiers",
+                              {"instType": "SWAP", "tdMode": "cross", "instFamily": f"{b}-USDT"}) or {}
+                return max([_f(t.get("maxSz")) for t in (d.get("data") or [])] or [0.0]) * _ct_sizes("okx").get(b, 1)
+            coins = _swr(f"mp_okx_{b}", 3600, load, default=0.0)
+            return coins * price
+        t = (_swr("mp_tbl", 3600, _mp_table, default={}) or {}).get(ex, {}).get(b)
+        if not t:
+            return 0.0
+        return t[1] if t[0] == "usd" else t[1] * price
+    except Exception:
+        return 0.0
+
+
 def api_pair():
     b = (request.args.get("symbol") or "").upper().replace("/", "").replace("USDT", "")
     legs = [_parse_leg(request.args.get("long", "")), _parse_leg(request.args.get("short", ""))]
@@ -469,6 +518,9 @@ def api_pair():
             leg.update(rate=round(d.get("rate", 0), 5), hours=d.get("hours", 8), next=d.get("next"))
             if b in pre_map().get(ex, ()):
                 leg["pre"] = 1
+            mp = _maxpos_usd(ex, b, d.get("price", 0))
+            if mp > 0:
+                leg["maxpos"] = round(mp, 2)
         out.append(leg)
     return jsonify({"symbol": b, "long": out[0], "short": out[1], "pre": 1 if any(l.get("pre") for l in out) else 0,
                     "ts": int(time.time() * 1000)})

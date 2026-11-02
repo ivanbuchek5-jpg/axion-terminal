@@ -701,3 +701,17 @@ html.side-open,html.side-open body{overflow:hidden}
   .c-bk .bkc{padding:6px 10px 8px}
   .c-calc{margin-top:14px;align-self:start}
 }
+
+/* ── v20: bold labels, 12-level books that fill their window, tighter desktop ratio ── */
+.exc div>span:first-child{font-weight:700}
+@media(min-width:1100px){
+  .pgrid{grid-template-rows:auto 1fr auto}
+  .exg .exc,.exg .exc.l,.exg .exc.s{align-content:start;gap:7px;padding:12px 14px 14px}
+  .exg .exc div{min-height:24px;font-size:.75rem}
+  .c-bk{display:flex;flex-direction:column}
+  .c-bk .bks{flex:1;border-top:1px solid var(--line)}
+  .c-bk .bkc{display:flex;flex-direction:column}
+  .c-bk .bk{flex:1;display:flex;flex-direction:column}
+  .c-bk .bk-r{flex:1;height:auto;min-height:20px}
+  .c-bk .bk-sep{margin:6px 0}
+}
