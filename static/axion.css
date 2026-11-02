@@ -665,3 +665,25 @@ button.xp-r.dis{opacity:.4;pointer-events:none}
 .sb{touch-action:none;overscroll-behavior:contain}
 .side{overscroll-behavior:contain}
 html.side-open,html.side-open body{overflow:hidden}
+
+/* ── v18: desktop = exchange cards + books to the right of the chart, calculator under it ── */
+.pgrid{grid-template-areas:"ex" "ch" "bk" "ca"}
+.exg{grid-area:ex}
+@media(min-width:1100px){
+  .pgrid{grid-template-columns:minmax(0,1fr) 400px;grid-template-areas:"ch ex" "ch bk" "ch ." "ca .";grid-template-rows:auto auto 1fr auto;align-items:start}
+  .c-chart{align-self:stretch}
+  .exg{gap:12px}
+  .exg .exc{padding:8px 10px;gap:3px;border-radius:12px}
+  .exc b{gap:6px;min-height:26px}
+  .exc .xt{width:20px;height:20px;border-radius:6px}
+  .exc .ar{width:16px;height:16px}.exc .ar svg{width:10px;height:10px}
+  .exc div{font-size:.6875rem;min-height:17px}
+  .exc .tg{height:16px;padding:0 4px;font-size:.5rem}
+  .xa{width:24px;height:24px;border-radius:7px}
+  .flip{width:28px;height:28px}
+  .c-calc{max-width:440px}
+}
+/* solid blue buttons */
+.xa,.flip{background:#3F6FF2;border-color:#3F6FF2;color:#fff}
+.xa[aria-expanded=true]{color:#fff}
+@media(hover:hover) and (pointer:fine){.xa:hover,.flip:hover{background:#5A85F6;border-color:#5A85F6;color:#fff}}
