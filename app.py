@@ -784,7 +784,7 @@ def api_symbols():
         return jsonify({"data": _symbols_cache["data"], "cached": True})
 
     data = safe_get(EXCHANGE_APIS["mexc"]["spot"]) or []
-    if not data:
+    if not data and _symbols_cache["data"]:
         return jsonify({"data": _symbols_cache["data"], "cached": True})
 
     TOKEN_NAMES = {
@@ -821,6 +821,25 @@ def api_symbols():
             "up":     change >= 0,
         })
 
+    # tokens that MEXC spot does not list (e.g. RT1 on Bitget): add from the other exchanges
+    have = {x["base"] for x in symbols}
+    for ex in ("bitget", "gate", "binance", "aster"):
+        try:
+            rows = PARSERS[ex](safe_get(EXCHANGE_APIS[ex]["spot"]) or []) or []
+        except Exception:
+            continue
+        for d in rows:
+            sym = (d.get("symbol") or "").replace("_", "")
+            if not sym.endswith("USDT"):
+                continue
+            base = sym[:-4]
+            if not base or base in have:
+                continue
+            have.add(base)
+            ch = float(d.get("change24h") or 0)
+            symbols.append({"symbol": sym, "base": base, "name": TOKEN_NAMES.get(base, ""),
+                            "price": float(d.get("price") or 0), "change": round(ch, 2),
+                            "vol": float(d.get("volume") or 0), "up": ch >= 0})
     symbols.sort(key=lambda x: x["vol"], reverse=True)
     _symbols_cache["data"] = symbols
     _symbols_cache["ts"]   = now
