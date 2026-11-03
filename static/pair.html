@@ -10,7 +10,7 @@
 <script>(function(){var t=null;try{t=localStorage.getItem('axion-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#E9EAEC':'#25272D')})()</script>
 <script>(function(){var d=document.documentElement;try{var t=+sessionStorage.getItem('axion-pt');sessionStorage.removeItem('axion-pt');if(t&&Date.now()-t<10000&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){d.classList.add('pt-in');setTimeout(function(){d.classList.remove('pt-in')},4500)}}catch(e){}})()</script>
 <style>html{background:#25272D}html[data-theme=light]{background:#E9EAEC}html.pt-in{background:#0E0F11}html:not(.css) body{visibility:hidden}</style>
-<link rel="stylesheet" href="axion.css?v=20" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
+<link rel="stylesheet" href="axion.css?v=21" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
 <script>setTimeout(function(){document.documentElement.classList.add("css")},3000)</script>
 </head>
 <body>
@@ -21,6 +21,7 @@
     <div class="row-f ph-t">
       <a class="icon-btn" href="spread.html" aria-label="Back" id="back"></a>
       <span class="sym"><span class="ico" id="pIco">—</span><span><b><span id="pSym">—</span><span id="pPre"></span></b><small id="pSub">—</small></span></span>
+      <div class="psearch"><label class="search"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg><input id="pq" placeholder="Search token to build a pair (RT1/RT)…" autocomplete="off" spellcheck="false" aria-label="Search token"></label></div>
       <span class="sp"></span>
       <span class="live" id="live"><i></i>LOADING</span>
       <span class="cdn" id="lat" hidden>—</span>
@@ -86,18 +87,19 @@
 </main>
 </div>
 
-<script src="lwc.js?v=20"></script>
-<script src="autocomplete.js?v=20"></script>
-<script src="shared.js?v=20"></script>
+<script src="lwc.js?v=21"></script>
+<script src="autocomplete.js?v=21"></script>
+<script src="shared.js?v=21"></script>
 <script>
 (function(){
   AX.init("spread", { ticker: false });
   document.getElementById("back").innerHTML = AX.icon("back");
   var P = new URLSearchParams(location.search);
-  var sym = AX.base(P.get("symbol") || "BTC"), LG = P.get("long") || "binance:fut", SH = P.get("short") || "okx:fut";
+  var sym = AX.base(P.get("symbol") || "BTC");
+  /* a leg is "exchange:type:TICKER" — the two legs may trade different tickers of the same token (RT1/RT) */
+  function full(s, d){ var p = String(s || "").split(":"); return p[0] + ":" + p[1] + ":" + AX.base(p[2] || d); }
+  var LG = full(P.get("long") || "binance:fut", sym), SH = full(P.get("short") || "okx:fut", sym);
   var KEY = "", lg = [], sh = [];
-  document.getElementById("pSym").textContent = sym;
-  document.getElementById("pIco").innerHTML = AX.ico(sym);
 
   var D = null, ms = 1000, timer = 0, stopped = false;
   function $(id){ return document.getElementById(id); }
@@ -184,7 +186,7 @@
   AX.seg($("rgSeg"), function(v){ rg = +v; applyRange(); });
   function loadHist(){
     var kk = KEY;
-    fetch("/api/hist?symbol=" + encodeURIComponent(sym) + "&long=" + encodeURIComponent(LG) + "&short=" + encodeURIComponent(SH) + "&minutes=1440", { cache: "no-store" })
+    fetch("/api/hist?symbol=" + encodeURIComponent(lg[2]) + "&long=" + encodeURIComponent(LG) + "&short=" + encodeURIComponent(SH) + "&minutes=1440", { cache: "no-store" })
       .then(function(r){ return r.json(); }).then(function(j){
         if (kk !== KEY) return;
         if (!j || !j.t || !j.t.length){ $("hNote").textContent = "No history from the exchanges for this pair — chart fills live."; return; }
@@ -228,11 +230,11 @@
   function setT(id, txt, c){ var el = $(id); if (!el) return; if (el.textContent !== txt) el.textContent = txt; if (c != null && el.className !== c) el.className = c; }
   function buildHead(d){
     var card = function(l, i){
-      var url = AX.exUrl(l.ex, l.type, sym), fut = l.type === "fut", dash = "<span>—</span>";
+      var ls = l.sym || sym, url = AX.exUrl(l.ex, l.type, ls), fut = l.type === "fut", dash = "<span>—</span>";
       return '<div class="exc ' + (i ? "s" : "l") + '"><b><span class="ar ' + (i ? "s" : "l") + '">' + AX.icon(i ? "down" : "up") + '</span>' +
-        '<a class="xl" href="' + url + '" target="_blank" rel="noopener" title="Open ' + AX.esc(sym) + " on " + AX.esc(AX.exName(l.ex)) + '">' + AX.xt(l.ex) + '<span class="n">' + AX.esc(AX.exName(l.ex)) + '</span></a>' +
+        '<a class="xl" href="' + url + '" target="_blank" rel="noopener" title="Open ' + AX.esc(ls) + " on " + AX.esc(AX.exName(l.ex)) + '">' + AX.xt(l.ex) + '<span class="n">' + AX.esc(AX.exName(l.ex)) + '</span></a>' +
         '<span class="tg' + (fut ? "" : " s") + '">' + (fut ? "FUT" : "SPOT") + '</span>' +
-        '<button class="xa" type="button" data-xp="' + i + '" aria-label="Other exchanges with ' + AX.esc(sym) + '" aria-expanded="false">' + AX.icon("chevd") + "</button></b>" +
+        '<button class="xa" type="button" data-xp="' + i + '" aria-label="Other exchanges with ' + AX.esc(ls) + '" aria-expanded="false">' + AX.icon("chevd") + "</button></b>" +
         '<div><span>Ask</span><span id="e' + i + 'a">—</span></div>' +
         '<div><span>Bid</span><span id="e' + i + 'b">—</span></div>' +
         "<div><span>Funding</span>" + (fut ? '<span><span id="e' + i + 'f">—</span> <span class="mu" id="e' + i + 'i"></span></span>' : dash) + "</div>" +
@@ -247,8 +249,9 @@
   document.addEventListener("click", function(e){
     var b = e.target.closest("[data-xp]"); if (!b) return;
     var own = +b.getAttribute("data-xp");
-    AX.exPop(b, sym, [LG, SH], function(ex, type){
-      var k = ex + ":" + type;
+    var me = own ? sh : lg, cur = [lg[0] + ":" + lg[1], sh[0] + ":" + sh[1]];
+    AX.exPop(b, me[2], cur, function(ex, type){
+      var k = ex + ":" + type + ":" + me[2];
       if (k === (own ? SH : LG)) return;
       if (k === (own ? LG : SH)){ AX.toast("Already selected on the other side", false); return; }
       setLegs(own ? LG : k, own ? k : SH);
@@ -272,7 +275,7 @@
   var unit = "usd", PK = "", pos = null, man = { l: false, s: false };
   function loadPos(){ PK = "axion-pos:" + KEY; pos = null; try { pos = JSON.parse(localStorage.getItem(PK) || "null"); } catch (e) {} }
   function savePos(){ try { if (pos) localStorage.setItem(PK, JSON.stringify(pos)); else localStorage.removeItem(PK); } catch (e) {} }
-  function xlab(l, role){ return AX.xt(l.ex) + "<b>" + role + " · " + AX.esc(AX.exName(l.ex)) + (l.type === "spot" ? " spot" : "") + "</b>"; }
+  function xlab(l, role){ return AX.xt(l.ex) + "<b>" + role + " · " + (lg[2] !== sh[2] ? AX.esc(l.sym) + " · " : "") + AX.esc(AX.exName(l.ex)) + (l.type === "spot" ? " spot" : "") + "</b>"; }
   function fp(v){ if (!(v > 0)) return ""; var s = String(+v.toPrecision(7)); if (/e/.test(s)) s = v.toFixed(10).replace(/0+$/, ""); return s; }
   function num(el){ var a = parseFloat(String(el.value).replace(",", ".")); return a > 0 ? a : 0; }
   /* prices start as the latest exchange prices (Long = best ask, Short = best bid) until the user types their own */
@@ -328,8 +331,8 @@
       var fl = fundLine(d.long, "Long", q), fs = fundLine(d.short, "Short", q);
       sum(cur, pnl, pnlConv);
       $("cKv").innerHTML = row("Entry prices", "$" + AX.plain(pos.longAvg) + " / $" + AX.plain(pos.shortAvg)) +
-        row("Size · Long", fmtCoins(q) + " " + AX.esc(sym) + " · " + money(nl)) +
-        row("Size · Short", fmtCoins(q) + " " + AX.esc(sym) + " · " + money(ns)) +
+        row("Size · Long", fmtCoins(q) + " " + AX.esc(lg[2]) + " · " + money(nl)) +
+        row("Size · Short", fmtCoins(q) + " " + AX.esc(sh[2]) + " · " + money(ns)) +
         row("Opened", new Date(pos.ts).toLocaleString()) +
         row("Open spread", sgn(pos.spread, 4), cls(pos.spread)) +
         row("Price gap", money((pos.shortAvg - pos.longAvg) * q, true), cls(pos.shortAvg - pos.longAvg)) +
@@ -343,14 +346,14 @@
     if (!(q0 > 0) || !(pL > 0) || !(pS > 0)){ ["cEntry", "cPnl", "cExit"].forEach(function(i){ setT(i, "—", "v"); }); $("cKv").innerHTML = ""; $("cWarn").textContent = "Enter a size (USD or coins) and both prices."; calc.last = null; return; }
     var ls0 = walk(d.long.bids, q0), sb0 = walk(d.short.asks, q0), lb0 = walk(d.long.asks, q0), ss0 = walk(d.short.bids, q0);
     var got = Math.min(ls0.got, sb0.got, lb0.got, ss0.got), warn = "";
-    if (got < q0 * .999) warn = "Order book is too shallow: " + fmtCoins(got) + " of " + fmtCoins(q0) + " " + sym + " fits. Results use the available depth.";
+    if (got < q0 * .999) warn = "Order book is too shallow: " + fmtCoins(got) + " of " + fmtCoins(q0) + " " + lg[2] + " fits. Results use the available depth.";
     var qq = got || q0;
     var entry = (pS - pL) / pL * 100;
     var feeOpen = qq * (pL * d.long.fee + pS * d.short.fee) / 100, feeClose = qq * (ls0.avg * d.long.fee + sb0.avg * d.short.fee) / 100;
     var gap = (pS - pL) * qq, pnl0 = (pS - sb0.avg + ls0.avg - pL) * qq - feeOpen - feeClose, conv = gap - feeOpen - feeClose;
     sum(entry, pnl0, conv);
     var fl0 = fundLine(d.long, "Long", qq), fs0 = fundLine(d.short, "Short", qq);
-    $("cKv").innerHTML = row("Position", fmtCoins(qq) + " " + AX.esc(sym) + " · " + money(qq * pL)) +
+    $("cKv").innerHTML = row("Position", fmtCoins(qq) + " " + AX.esc(lg[2]) + " · " + money(qq * pL)) +
       row("Price gap", money(gap, true), cls(gap)) +
       row("Fees open + close (est.)", '<span class="dn">' + money(-(feeOpen + feeClose)) + "</span>") + fl0.html + fs0.html;
     $("cWarn").textContent = warn;
@@ -397,13 +400,15 @@
   }
   /* (re)select the two legs: everything on the page follows the chosen exchanges */
   function setLegs(L, S, first){
-    LG = L; SH = S; lg = L.split(":"); sh = S.split(":"); KEY = sym + "|" + L + "|" + S;
+    LG = L; SH = S; lg = L.split(":"); sh = S.split(":"); KEY = L + "|" + S;
+    var multi = lg[2] !== sh[2], pair = multi ? lg[2] + "/" + sh[2] : lg[2];
+    $("pSym").textContent = pair; $("pIco").innerHTML = AX.ico(lg[2]);
     $("pSub").textContent = AX.exName(lg[0]) + (lg[1] === "spot" ? " spot" : "") + " ↔ " + AX.exName(sh[0]) + (sh[1] === "spot" ? " spot" : "");
-    document.title = "AXION TERMINAL — " + sym + " " + AX.exName(lg[0]) + "/" + AX.exName(sh[0]);
-    $("cLbL").innerHTML = xlab({ ex: lg[0], type: lg[1] }, "Long"); $("cLbS").innerHTML = xlab({ ex: sh[0], type: sh[1] }, "Short");
+    document.title = "AXION TERMINAL — " + pair + " " + AX.exName(lg[0]) + "/" + AX.exName(sh[0]);
+    $("cLbL").innerHTML = xlab({ ex: lg[0], type: lg[1], sym: lg[2] }, "Long"); $("cLbS").innerHTML = xlab({ ex: sh[0], type: sh[1], sym: sh[2] }, "Short");
     loadPos(); man = { l: false, s: false }; $("cPL").value = ""; $("cPS").value = ""; $("cKv").innerHTML = "";
-    url = "/api/pair?symbol=" + encodeURIComponent(sym) + "&long=" + encodeURIComponent(L) + "&short=" + encodeURIComponent(S);
-    try { history.replaceState(null, "", "?symbol=" + encodeURIComponent(sym) + "&long=" + encodeURIComponent(L) + "&short=" + encodeURIComponent(S)); } catch (e) {}
+    url = "/api/pair?symbol=" + encodeURIComponent(lg[2]) + "&long=" + encodeURIComponent(L) + "&short=" + encodeURIComponent(S);
+    try { history.replaceState(null, "", "?symbol=" + encodeURIComponent(lg[2]) + "&long=" + encodeURIComponent(L) + "&short=" + encodeURIComponent(S)); } catch (e) {}
     if (!first){
       D = null; built = false; prePaint = -1; hist = { e: [], x: [] }; pxMap = {};
       if (sE){ sE.setData([]); sX.setData([]); }
@@ -412,6 +417,15 @@
     }
     loadHist(); poll();
   }
+  /* token search: pick any ticker, then choose its exchange as Long (L) or Short (S) → [token_1]/[token_2] bundle */
+  if (window.initAutocomplete) window.initAutocomplete($("pq"), function(symbol, base){
+    base = AX.base(base || symbol); $("pq").value = "";
+    AX.exPop($("pq"), base, [lg[0] + ":" + lg[1], sh[0] + ":" + sh[1]], function(ex, type, side){
+      var k = ex + ":" + type + ":" + base, L = side ? LG : k, S = side ? k : SH;
+      if (L === S){ AX.toast("Both legs are identical", false); return; }
+      setLegs(L, S);
+    }, -1);
+  });
   initChart();
   setLegs(LG, SH, true);
 })();

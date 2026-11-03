@@ -715,3 +715,16 @@ html.side-open,html.side-open body{overflow:hidden}
   .c-bk .bk-r{flex:1;height:auto;min-height:20px}
   .c-bk .bk-sep{margin:6px 0}
 }
+
+/* ── v21: bigger popover title, search-mode rows (Long / Short pick), pair search ── */
+.xp-h{font-size:.8125rem;padding:14px 14px 10px}
+.xpop.ls .xp-r{grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,.8fr) minmax(0,1.2fr) auto}
+.xp-ls{display:inline-flex;gap:4px}
+.xp-b{width:26px;height:24px;border-radius:7px;font:700 .6875rem var(--mono);color:#fff;background:#3F6FF2;border:0;cursor:pointer;padding:0}
+.xp-b.s{background:#3A3D44}
+@media(hover:hover) and (pointer:fine){.xp-b:hover{filter:brightness(1.12)}}
+.psearch{position:relative;flex:1;max-width:340px;min-width:0}
+.psearch .search{height:38px;border-radius:12px;padding:0 12px}
+.psearch .search input{font-size:.8125rem}
+
+@media(max-width:859px){.ph-t{flex-wrap:wrap}.psearch{order:9;flex:1 0 100%;max-width:none}}

@@ -189,16 +189,17 @@
   AX.EX = {
     binance: { n: "Binance", c: "#F0B90B", t: "BN" }, aster: { n: "Aster", c: "#B7791F", t: "AS" },
     okx: { n: "OKX", c: "#3A3D44", t: "OK" }, bingx: { n: "BingX", c: "#2B6BFF", t: "BX" },
-    mexc: { n: "MEXC", c: "#1B7BE0", t: "MX" }, gate: { n: "Gate", c: "#E24B4B", t: "GT" }
+    mexc: { n: "MEXC", c: "#1B7BE0", t: "MX" }, gate: { n: "Gate", c: "#E24B4B", t: "GT" },
+    bitget: { n: "Bitget", c: "#00B5BE", t: "BG" }
   };
   AX.exName = function (k) { return (AX.EX[k] || { n: k }).n; };
-  var XD = { binance: ["binance.com", 270], aster: ["asterdex.com", 0], okx: ["okx.com", 294], bingx: ["bingx.com", 1064], mexc: ["mexc.com", 544], gate: ["gate.com", 302] };
+  var XD = { binance: ["binance.com", 270], aster: ["asterdex.com", 0], okx: ["okx.com", 294], bingx: ["bingx.com", 1064], mexc: ["mexc.com", 544], gate: ["gate.com", 302], bitget: ["bitget.com", 513] };
   /* one logo per exchange: your file static/ex/<key>.png → CoinMarketCap logo → site favicon; letters only if nothing loads.
      The working source is remembered, so re-rendered lists never re-request or flash. */
   var XR = {};
   function xsrc(k, n) {
     var d = XD[k]; if (!d) return null;
-    if (n === 0) return "ex/" + k + ".png?v=20";
+    if (n === 0) return "ex/" + k + ".png?v=21";
     if (n === 1 && d[1]) return "https://s2.coinmarketcap.com/static/img/exchanges/64x64/" + d[1] + ".png";
     if (n === 2 || (n === 1 && !d[1])) return "https://www.google.com/s2/favicons?domain=" + d[0] + "&sz=128";
     return null;
@@ -218,7 +219,8 @@
       okx: f ? "https://www.okx.com/trade-swap/" + b.toLowerCase() + "-usdt-swap" : "https://www.okx.com/trade-spot/" + b.toLowerCase() + "-usdt",
       bingx: f ? "https://bingx.com/en/perpetual/" + b + "-USDT/" : "https://bingx.com/en/spot/" + b + "USDT/",
       mexc: f ? "https://futures.mexc.com/exchange/" + b + "_USDT" : "https://www.mexc.com/exchange/" + b + "_USDT",
-      gate: f ? "https://www.gate.io/futures/USDT/" + b + "_USDT" : "https://www.gate.io/trade/" + b + "_USDT"
+      gate: f ? "https://www.gate.io/futures/USDT/" + b + "_USDT" : "https://www.gate.io/trade/" + b + "_USDT",
+      bitget: f ? "https://www.bitget.com/futures/usdt/" + b + "USDT" : "https://www.bitget.com/spot/" + b + "USDT"
     };
     return U[ex] || "#";
   };
@@ -243,7 +245,7 @@
   window.addEventListener("resize", xpClose);
   AX.exPop = function (btn, sym, cur, onPick, own) {
     var was = XP && XP._b === btn; xpClose(); if (was) return;
-    var el = document.createElement("div"); el.className = "xpop"; el._b = btn; XP = el;
+    var el = document.createElement("div"); el.className = "xpop" + (own < 0 ? " ls" : ""); el._b = btn; XP = el;
     btn.setAttribute("aria-expanded", "true");
     el.innerHTML = '<div class="xp-h">Exchanges · ' + AX.esc(sym) + '</div><div class="xp-b"><div class="xp-e">Loading…</div></div>';
     document.body.appendChild(el);
@@ -260,8 +262,12 @@
         if (r.type !== "fut") return '<span class="mu">—</span>';
         return '<span class="' + (r.rate > 0 ? "dn" : r.rate < 0 ? "up" : "") + '">' + (r.rate > 0 ? "+" : "") + r.rate.toFixed(4) + '%</span> <span class="mu">' + r.hours + "h</span>";
       };
-      el.querySelector(".xp-b").innerHTML = rows.length ? '<div class="xp-r xp-th"><span>Ex</span><span>Last</span><span>Vol</span><span>Fund</span></div>' + rows.map(function (r) {
-        var key = r.ex + ":" + r.type, on = onPick ? key === cur[own] : cur.indexOf(key) > -1, dis = onPick && key === cur[1 - own];
+      el.querySelector(".xp-b").innerHTML = rows.length ? '<div class="xp-r xp-th"><span>Ex</span><span>Last</span><span>Vol</span><span>Fund</span>' + (own < 0 ? "<span></span>" : "") + '</div>' + rows.map(function (r) {
+        var key = r.ex + ":" + r.type;
+        if (onPick && own < 0) {
+          return '<div class="xp-r"><span class="xp-x">' + AX.xt(r.ex) + "<b>" + AX.esc(AX.exName(r.ex)) + '</b><i class="tg' + (r.type === "spot" ? " s" : "") + '">' + (r.type === "spot" ? "SPOT" : "FUT") + "</i></span><span>" + AX.plain(r.price) + '</span><span class="' + AX.volc(r.vol) + '">' + AX.vol(r.vol) + "</span><span>" + f(r) + '</span><span class="xp-ls"><button type="button" class="xp-b l" data-k="' + key + '" data-s="0">L</button><button type="button" class="xp-b s" data-k="' + key + '" data-s="1">S</button></span></div>';
+        }
+        var on = onPick ? key === cur[own] : cur.indexOf(key) > -1, dis = onPick && key === cur[1 - own];
         var open = onPick ? '<button type="button" class="xp-r' + (on ? " cur" : "") + (dis ? " dis" : "") + '" data-k="' + key + '">' : '<a class="xp-r' + (on ? " cur" : "") + '" href="' + AX.exUrl(r.ex, r.type, sym) + '" target="_blank" rel="noopener">';
         return open + '<span class="xp-x">' + AX.xt(r.ex) + "<b>" + AX.esc(AX.exName(r.ex)) + '</b><i class="tg' + (r.type === "spot" ? " s" : "") + '">' + (r.type === "spot" ? "SPOT" : "FUT") + "</i></span><span>" + AX.plain(r.price) + "</span><span class=\"" + AX.volc(r.vol) + "\">" + AX.vol(r.vol) + "</span><span>" + f(r) + "</span>" + (onPick ? "</button>" : "</a>");
       }).join("") : '<div class="xp-e">No other listings found</div>';
@@ -269,7 +275,7 @@
     };
     el.addEventListener("click", function (e) {
       var b = e.target.closest("button[data-k]"); if (!b || !onPick) return;
-      var k = b.getAttribute("data-k").split(":"); xpClose(); onPick(k[0], k[1]);
+      var k = b.getAttribute("data-k").split(":"); xpClose(); onPick(k[0], k[1], +b.getAttribute("data-s") || 0);
     });
     var c = XC[sym];
     if (c && Date.now() - c.t < 15000) { paint(c.d); return; }

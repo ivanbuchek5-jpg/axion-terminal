@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from flask import jsonify, request
 
-EXCH = ["binance", "aster", "okx", "bingx", "mexc", "gate"]
+EXCH = ["binance", "aster", "okx", "bingx", "mexc", "gate", "bitget"]
 # taker fees, % per side (approximate public tiers: shown as an estimate in the UI)
 FEES = {
     "binance": {"fut": 0.05, "spot": 0.10},
@@ -19,6 +19,7 @@ FEES = {
     "bingx":   {"fut": 0.05, "spot": 0.10},
     "mexc":    {"fut": 0.02, "spot": 0.05},
     "gate":    {"fut": 0.05, "spot": 0.20},
+    "bitget":  {"fut": 0.06, "spot": 0.10},
 }
 MAX_ABS_SPREAD = 50.0  # %: bigger "spreads" are almost always two different coins sharing a ticker
 
@@ -106,6 +107,8 @@ def _futures():
         "gate": ("https://api.gateio.ws/api/v4/futures/usdt/tickers", None),
         "gate_c": ("https://api.gateio.ws/api/v4/futures/usdt/contracts", None),
         "mexc": ("https://contract.mexc.com/api/v1/contract/ticker", None),
+        "bitget": ("https://api.bitget.com/api/v2/mix/market/tickers", {"productType": "USDT-FUTURES"}),
+        "bitget_f": ("https://api.bitget.com/api/v2/mix/market/current-fund-rate", {"productType": "USDT-FUTURES"}),
     }
     raw = _S["many"](tasks)
     out = {e: {} for e in EXCH}
@@ -155,6 +158,17 @@ def _futures():
                 gi.get(n, 8), int(_f(d.get("funding_next_apply")) * 1000) or None,
                 _f(d.get("highest_bid")), _f(d.get("lowest_ask")))
 
+    bgi = {}
+    for d in ((raw.get("bitget_f") or {}).get("data") or []) if isinstance(raw.get("bitget_f"), dict) else []:
+        bgi[d.get("symbol")] = (max(1, int(_f(d.get("fundingRateInterval"), 8))), int(_f(d.get("nextUpdate"))) or None)
+    bgd = (raw.get("bitget") or {}).get("data") if isinstance(raw.get("bitget"), dict) else None
+    for d in (bgd if isinstance(bgd, list) else []):
+        sy = d.get("symbol", "")
+        if sy.endswith("USDT"):
+            hrs, nxt = bgi.get(sy, (8, None))
+            put("bitget", sy[:-4], _f(d.get("markPrice")) or _f(d.get("lastPr")), _f(d.get("fundingRate")) * 100, hrs, nxt,
+                _f(d.get("bidPr")), _f(d.get("askPr")))
+
     mx = (raw.get("mexc") or {}).get("data", [])
     for d in (mx if isinstance(mx, list) else []):
         s = d.get("symbol", "")
@@ -175,6 +189,7 @@ def _spot():
         "bingx": (A["bingx"]["spot"], _S["bx"]()),
         "mexc": (A["mexc"]["spot"], None),
         "gate": (A["gate"]["spot"], None),
+        "bitget": (A["bitget"]["spot"], None),
     }
     raw = _S["many"](tasks)
     out = {}
@@ -211,6 +226,7 @@ def _pre_load():
         "bingx": (["https://open-api.bingx.com/openApi/swap/v2/quote/contracts"], _S["bx"]()),
         "gate": ("https://api.gateio.ws/api/v4/futures/usdt/contracts", None),
         "mexc": ("https://contract.mexc.com/api/v1/contract/detail", None),
+        "bitget": ("https://api.bitget.com/api/v2/mix/market/contracts", {"productType": "USDT-FUTURES"}),
     })
     out = {e: set() for e in EXCH}
     seen = False
@@ -243,6 +259,12 @@ def _pre_load():
         n = str(it.get("symbol", ""))
         if n.endswith("_USDT") and _is_pre(it):
             out["mexc"].add(n[:-5])
+    bgc = raw.get("bitget")
+    for it in ((bgc.get("data") if isinstance(bgc, dict) else None) or []):
+        seen = True
+        n = str(it.get("symbol", ""))
+        if n.endswith("USDT") and _is_pre(it):
+            out["bitget"].add(n[:-4])
     return out if seen else {}
 
 
@@ -386,6 +408,10 @@ def _fetch_book(ex, typ, b):
             x = d.get("data") or {}
             k = _ct_sizes("mexc").get(b, 1)
             return _norm_book([r[:2] for r in x.get("bids", [])], [r[:2] for r in x.get("asks", [])], k)
+        if ex == "bitget":
+            d = g("https://api.bitget.com/api/v2/mix/market/merge-depth", {"symbol": S, "productType": "USDT-FUTURES", "limit": 20}) or {}
+            x = d.get("data") or {}
+            return _norm_book([r[:2] for r in x.get("bids", [])], [r[:2] for r in x.get("asks", [])])
         if ex == "gate":
             d = g("https://api.gateio.ws/api/v4/futures/usdt/order_book", {"contract": f"{b}_USDT", "limit": 20}) or {}
             k = _ct_sizes("gate").get(b, 1)
@@ -408,6 +434,10 @@ def _fetch_book(ex, typ, b):
         if ex == "mexc":
             d = g("https://api.mexc.com/api/v3/depth", {"symbol": S, "limit": 20}) or {}
             return _norm_book(d.get("bids", []), d.get("asks", []))
+        if ex == "bitget":
+            d = g("https://api.bitget.com/api/v2/spot/market/orderbook", {"symbol": S, "type": "step0", "limit": 20}) or {}
+            x = d.get("data") or {}
+            return _norm_book([r[:2] for r in x.get("bids", [])], [r[:2] for r in x.get("asks", [])])
         if ex == "gate":
             d = g("https://api.gateio.ws/api/v4/spot/order_book", {"currency_pair": f"{b}_USDT", "limit": 20}) or {}
             return _norm_book(d.get("bids", []), d.get("asks", []))
@@ -433,6 +463,9 @@ def _fetch_vol(ex, typ, b):
             return _f(d.get("quoteVolume"))
         if ex == "mexc":
             return _f(((g("https://contract.mexc.com/api/v1/contract/ticker", {"symbol": f"{b}_USDT"}) or {}).get("data") or {}).get("amount24"))
+        if ex == "bitget":
+            d = (g("https://api.bitget.com/api/v2/mix/market/ticker", {"symbol": S, "productType": "USDT-FUTURES"}) or {}).get("data") or []
+            return _f((d[0] if isinstance(d, list) and d else {}).get("usdtVolume"))
         if ex == "gate":
             d = g("https://api.gateio.ws/api/v4/futures/usdt/tickers", {"contract": f"{b}_USDT"})
             return _f((d[0] if isinstance(d, list) and d else {}).get("volume_24h_quote"))
@@ -441,12 +474,18 @@ def _fetch_vol(ex, typ, b):
     return 0.0
 
 
-def _parse_leg(s):
-    try:
-        ex, typ = s.split(":")
-    except ValueError:
+def _clean(x):
+    return (x or "").upper().replace("/", "").replace("USDT", "")
+
+
+def _parse_leg(s, default=""):
+    """'ex:type' or 'ex:type:SYMBOL' (a leg may trade a different ticker of the same token) → (ex, type, base)"""
+    p = (s or "").split(":")
+    if len(p) not in (2, 3):
         return None
-    return (ex, typ) if ex in EXCH and typ in ("fut", "spot") else None
+    ex, typ = p[0], p[1]
+    b = _clean(p[2]) if len(p) == 3 and p[2] else default
+    return (ex, typ, b) if ex in EXCH and typ in ("fut", "spot") and b else None
 
 
 def _mp_table():
@@ -499,30 +538,31 @@ def _maxpos_usd(ex, b, price):
 
 
 def api_pair():
-    b = (request.args.get("symbol") or "").upper().replace("/", "").replace("USDT", "")
-    legs = [_parse_leg(request.args.get("long", "")), _parse_leg(request.args.get("short", ""))]
-    if not b or not all(legs):
+    base = _clean(request.args.get("symbol"))
+    legs = [_parse_leg(request.args.get("long", ""), base), _parse_leg(request.args.get("short", ""), base)]
+    if not all(legs):
         return jsonify({"error": "bad params"}), 400
     fut = _swr("fut", 4, _futures) or {}
     spot = _swr("spot", 6, _spot) or {}
+    PRE = pre_map()
     with ThreadPoolExecutor(max_workers=2) as pool:
-        books = list(pool.map(lambda lg: _cached(f"bk_{lg[0]}_{lg[1]}_{b}", 0.6, lambda: _fetch_book(lg[0], lg[1], b)) or ([], []), legs))
+        books = list(pool.map(lambda lg: _cached(f"bk_{lg[0]}_{lg[1]}_{lg[2]}", 0.6, lambda: _fetch_book(lg[0], lg[1], lg[2])) or ([], []), legs))
     out = []
-    for (ex, typ), (bids, asks) in zip(legs, books):
-        vol = _swr(f"vol_{ex}_{typ}_{b}", 30, lambda ex=ex, typ=typ: _fetch_vol(ex, typ, b) or 0.0001, default=0.0)
+    for (ex, typ, b), (bids, asks) in zip(legs, books):
+        vol = _swr(f"vol_{ex}_{typ}_{b}", 30, lambda ex=ex, typ=typ, b=b: _fetch_vol(ex, typ, b) or 0.0001, default=0.0)
         d = (fut if typ == "fut" else spot).get(ex, {}).get(b) or {}
-        leg = {"ex": ex, "type": typ, "bids": bids, "asks": asks, "vol24h": vol,
+        leg = {"ex": ex, "type": typ, "sym": b, "bids": bids, "asks": asks, "vol24h": vol,
                "price": d.get("price", 0), "fee": FEES[ex][typ],
                "spot": (spot.get(ex, {}).get(b) or {}).get("price") if typ == "fut" else None}
         if typ == "fut":
             leg.update(rate=round(d.get("rate", 0), 5), hours=d.get("hours", 8), next=d.get("next"))
-            if b in pre_map().get(ex, ()):
+            if b in PRE.get(ex, ()):
                 leg["pre"] = 1
             mp = _maxpos_usd(ex, b, d.get("price", 0))
             if mp > 0:
                 leg["maxpos"] = round(mp, 2)
         out.append(leg)
-    return jsonify({"symbol": b, "long": out[0], "short": out[1], "pre": 1 if any(l.get("pre") for l in out) else 0,
+    return jsonify({"symbol": out[0]["sym"], "long": out[0], "short": out[1], "pre": 1 if any(l.get("pre") for l in out) else 0,
                     "ts": int(time.time() * 1000)})
 
 
@@ -585,6 +625,25 @@ def _klines(ex, typ, b, minutes):
                 end = int(d[0][0]) - 1
                 if len(d) < 2:
                     break
+        elif ex == "bitget":
+            if typ == "fut":
+                url, par = "https://api.bitget.com/api/v2/mix/market/candles", {"symbol": S, "productType": "USDT-FUTURES", "granularity": "1m"}
+            else:
+                url, par = "https://api.bitget.com/api/v2/spot/market/candles", {"symbol": S, "granularity": "1min"}
+            end, left = None, minutes
+            while left > 0:
+                p = dict(par, limit=min(1000, left))
+                if end:
+                    p["endTime"] = end
+                d = (g(url, p) or {}).get("data") or []
+                if not d:
+                    break
+                for k in d:
+                    out[int(_f(k[0])) // 1000] = _f(k[4])
+                left -= len(d)
+                end = int(min(_f(k[0]) for k in d)) - 1
+                if len(d) < 2:
+                    break
         elif ex == "okx":
             inst = f"{b}-USDT-SWAP" if typ == "fut" else f"{b}-USDT"
             tasks = [("https://www.okx.com/api/v5/market/candles", {"instId": inst, "bar": "1m", "limit": 300})]
@@ -631,12 +690,12 @@ def _klines(ex, typ, b, minutes):
 
 
 def api_hist():
-    b = (request.args.get("symbol") or "").upper().replace("/", "").replace("USDT", "")
-    legs = [_parse_leg(request.args.get("long", "")), _parse_leg(request.args.get("short", ""))]
-    if not b or not all(legs):
+    base = _clean(request.args.get("symbol"))
+    legs = [_parse_leg(request.args.get("long", ""), base), _parse_leg(request.args.get("short", ""), base)]
+    if not all(legs):
         return jsonify({"error": "bad params"}), 400
     minutes = max(30, min(1440, int(_f(request.args.get("minutes"), 1440))))
-    ser = [_cached(f"kl_{ex}_{typ}_{b}_{minutes}", 45, lambda ex=ex, typ=typ: _klines(ex, typ, b, minutes)) or {} for ex, typ in legs]
+    ser = [_cached(f"kl_{ex}_{typ}_{b}_{minutes}", 45, lambda ex=ex, typ=typ, b=b: _klines(ex, typ, b, minutes)) or {} for ex, typ, b in legs]
     common = sorted(set(ser[0]) & set(ser[1]))
     t, en, ex_, lp, sp = [], [], [], [], []
     for ts in common:

@@ -79,6 +79,11 @@ EXCHANGE_APIS = {
         "book":    "https://api.mexc.com/api/v3/ticker/bookTicker",
         "color":   "#00B2FF",
     },
+    "bitget": {
+        "spot":    "https://api.bitget.com/api/v2/spot/market/tickers",
+        "funding": "https://api.bitget.com/api/v2/mix/market/tickers",
+        "color":   "#00C2CB",
+    },
     "gate": {
         "spot":    "https://api.gateio.ws/api/v4/spot/tickers",
         "color":   "#EB4D4B",
@@ -221,6 +226,29 @@ def parse_gate_spot(data, symbol=None):
     return out
 
 
+def parse_bitget_spot(data, symbol=None):
+    rows = (data or {}).get("data") if isinstance(data, dict) else None
+    if not rows:
+        return []
+    out = []
+    for d in rows:
+        s = d.get("symbol", "")
+        if symbol and s != symbol:
+            continue
+        f = lambda k: float(d.get(k, 0) or 0)
+        out.append({
+            "symbol":    s,
+            "price":     f("lastPr"),
+            "change24h": f("change24h") * 100,
+            "volume":    f("usdtVolume") or f("quoteVolume"),
+            "bid":       f("bidPr"),
+            "ask":       f("askPr"),
+            "high24h":   f("high24h"),
+            "low24h":    f("low24h"),
+        })
+    return out
+
+
 def parse_bingx_spot(data, symbol=None):
     if not data:
         return []
@@ -294,6 +322,7 @@ PARSERS = {
     "mexc":    parse_mexc_spot,
     "gate":    parse_gate_spot,
     "bingx":  parse_bingx_spot,
+    "bitget":  parse_bitget_spot,
 }
 
 
@@ -329,6 +358,7 @@ def api_prices():
         # bybit: blocked on cloud
         "mexc":    (EXCHANGE_APIS["mexc"]["spot"], {"symbol": symbol}),
         "gate":    (EXCHANGE_APIS["gate"]["spot"], None),
+        "bitget":  (EXCHANGE_APIS["bitget"]["spot"], {"symbol": symbol}),
         "bingx":  (EXCHANGE_APIS["bingx"]["spot"], {"symbol": f"{symbol[:-4]}-USDT", "timestamp": _ts()}),
         "okx":     (["https://www.okx.com/api/v5/market/ticker"], {"instId": okx_inst(symbol)}),
     }
@@ -446,6 +476,7 @@ def api_funding():
         "bingx":   (EXCHANGE_APIS["bingx"]["funding"], bingx_params()),
         "okx":     (["https://www.okx.com/api/v5/public/funding-rate"], {"instId": "ANY"}),
         "okx_mark": (["https://www.okx.com/api/v5/public/mark-price"], {"instType": "SWAP"}),
+        "bitget":  (EXCHANGE_APIS["bitget"]["funding"], {"productType": "USDT-FUTURES"}),
     }
     raw = fetch_all_parallel(tasks)
     result = []
@@ -523,6 +554,16 @@ def api_funding():
         if not sym.endswith("USDT"): continue
         rate = float(d.get("fundingRate", 0) or 0) * 100
         result.append({"exchange":"MEXC","symbol":sym,"rate":round(rate,4),"annualized":round(rate*3*365,2),"color":"#00B2FF","mark_price":float(d.get("lastPrice",0) or 0),"positive":rate>=0,"interval":"8H"})
+
+    bg = (raw.get("bitget") or {})
+    for d in (bg.get("data") if isinstance(bg, dict) and isinstance(bg.get("data"), list) else []):
+        sym = str(d.get("symbol", ""))
+        if sym.endswith("USDT"):
+            try:
+                add_row("Bitget", sym, float(d.get("fundingRate") or 0) * 100, EXCHANGE_APIS["bitget"]["color"],
+                        float(d.get("markPrice") or d.get("lastPr") or 0), 8)
+            except (TypeError, ValueError):
+                pass
 
     seen, deduped = set(), []
     for r in result:
