@@ -10,7 +10,7 @@
 <script>(function(){var t=null;try{t=localStorage.getItem('axion-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#E9EAEC':'#25272D')})()</script>
 <script>(function(){var d=document.documentElement;try{var t=+sessionStorage.getItem('axion-pt');sessionStorage.removeItem('axion-pt');if(t&&Date.now()-t<10000&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){d.classList.add('pt-in');setTimeout(function(){d.classList.remove('pt-in')},4500)}}catch(e){}})()</script>
 <style>html{background:#25272D}html[data-theme=light]{background:#E9EAEC}html.pt-in{background:#0E0F11}html:not(.css) body{visibility:hidden}</style>
-<link rel="stylesheet" href="axion.css?v=22" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
+<link rel="stylesheet" href="axion.css?v=23" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
 <script>setTimeout(function(){document.documentElement.classList.add("css")},3000)</script>
 </head>
 <body>
@@ -21,7 +21,6 @@
     <div class="row-f ph-t">
       <a class="icon-btn" href="spread.html" aria-label="Back" id="back"></a>
       <span class="sym"><span class="ico" id="pIco">—</span><span><b><span id="pSym">—</span><span id="pPre"></span></b><small id="pSub">—</small></span></span>
-      <div class="psearch"><label class="search"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg><input id="pq" placeholder="Search token to build a pair (RT1/RT)…" autocomplete="off" spellcheck="false" aria-label="Search token"></label></div>
       <span class="sp"></span>
       <span class="live" id="live"><i></i>LOADING</span>
       <span class="cdn" id="lat" hidden>—</span>
@@ -87,9 +86,10 @@
 </main>
 </div>
 
-<script src="lwc.js?v=22"></script>
-<script src="autocomplete.js?v=22"></script>
-<script src="shared.js?v=22"></script>
+<script src="lwc.js?v=23"></script>
+<script src="autocomplete.js?v=23"></script>
+<script src="shared.js?v=23"></script>
+<script src="autocomplete.js?v=23"></script>
 <script>
 (function(){
   AX.init("spread", { ticker: false });
@@ -245,17 +245,26 @@
     };
     $("exs").innerHTML = card(d.long, 0) + card(d.short, 1) + '<button class="flip" type="button" id="flip" aria-label="Flip long and short" title="Flip long ⇄ short">' + AX.icon("converter") + "</button>";
   }
-  document.addEventListener("click", function(e){ if (e.target.closest("#flip")) setLegs(SH, LG); });
+  var PEND = [null, null];
+  function clearPend(){ PEND = [null, null]; document.querySelectorAll(".exc.pend").forEach(function(c){ c.classList.remove("pend"); }); }
+  document.addEventListener("click", function(e){ if (e.target.closest("#flip")){ clearPend(); setLegs(SH, LG); } });
   document.addEventListener("click", function(e){
     var b = e.target.closest("[data-xp]"); if (!b) return;
     var own = +b.getAttribute("data-xp");
-    var me = own ? sh : lg, cur = [lg[0] + ":" + lg[1], sh[0] + ":" + sh[1]];
-    AX.exPop(b, me[2], cur, function(ex, type){
-      var k = ex + ":" + type + ":" + me[2];
-      if (k === (own ? SH : LG)) return;
-      if (k === (own ? LG : SH)){ AX.toast("Already selected on the other side", false); return; }
-      setLegs(own ? LG : k, own ? k : SH);
-    }, own);
+    var me = own ? sh : lg, ot = own ? lg : sh, cur = [lg[0] + ":" + lg[1], sh[0] + ":" + sh[1]];
+    AX.exPop(b, me[2], cur, function(ex, type, tok){
+      var k = ex + ":" + type + ":" + tok, card = b.closest(".exc"), swap = tok !== me[2];
+      if (!swap && !PEND[1 - own] && k === (own ? SH : LG)) return;
+      if (k === (own ? LG : SH) && !PEND[1 - own]){ AX.toast("Already selected on the other side", false); return; }
+      /* a different ticker is only applied once BOTH sides are chosen */
+      if (swap || PEND[1 - own]){
+        PEND[own] = k; card.classList.add("pend");
+        if (!PEND[1 - own]){ AX.toast(tok + " · " + AX.exName(ex) + " chosen. Now pick the token for the other side", true); return; }
+      }
+      var L = PEND[0] || (own ? LG : k), S = PEND[1] || (own ? k : SH);
+      if (L === S){ AX.toast("Both legs are identical", false); return; }
+      clearPend(); setLegs(L, S);
+    }, own, ot[2]);
   });
 
   /* ── order books (5 levels each side, inside the Exchanges card) ── */
@@ -417,15 +426,6 @@
     }
     loadHist(); poll();
   }
-  /* token search: pick any ticker, then choose its exchange as Long (L) or Short (S) → [token_1]/[token_2] bundle */
-  if (window.initAutocomplete) window.initAutocomplete($("pq"), function(symbol, base){
-    base = AX.base(base || symbol); $("pq").value = "";
-    AX.exPop($("pq"), base, [lg[0] + ":" + lg[1], sh[0] + ":" + sh[1]], function(ex, type, side){
-      var k = ex + ":" + type + ":" + base, L = side ? LG : k, S = side ? k : SH;
-      if (L === S){ AX.toast("Both legs are identical", false); return; }
-      setLegs(L, S);
-    }, -1);
-  });
   initChart();
   setLegs(LG, SH, true);
 })();

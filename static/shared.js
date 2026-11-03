@@ -199,7 +199,7 @@
   var XR = {};
   function xsrc(k, n) {
     var d = XD[k]; if (!d) return null;
-    if (n === 0) return "ex/" + k + ".png?v=22";
+    if (n === 0) return "ex/" + k + ".png?v=23";
     if (n === 1 && d[1]) return "https://s2.coinmarketcap.com/static/img/exchanges/64x64/" + d[1] + ".png";
     if (n === 2 || (n === 1 && !d[1])) return "https://www.google.com/s2/favicons?domain=" + d[0] + "&sz=128";
     return null;
@@ -240,14 +240,15 @@
   /* popover: every exchange that lists this token (Ex · Last · Vol · Fund) */
   var XP = null, XC = {};
   function xpClose() { if (XP) { if (XP._b) XP._b.setAttribute("aria-expanded", "false"); XP.remove(); XP = null; } }
-  document.addEventListener("click", function (e) { if (XP && !XP.contains(e.target) && !e.target.closest("[data-xp]")) xpClose(); });
+  document.addEventListener("click", function (e) { if (XP && !XP.contains(e.target) && !e.target.closest("[data-xp],.ct-dropdown")) xpClose(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") xpClose(); });
   window.addEventListener("resize", xpClose);
-  AX.exPop = function (btn, sym, cur, onPick, own) {
+  AX.exPop = function (btn, sym, cur, onPick, own, osym) {
     var was = XP && XP._b === btn; xpClose(); if (was) return;
     var el = document.createElement("div"); el.className = "xpop" + (own < 0 ? " ls" : ""); el._b = btn; XP = el;
     btn.setAttribute("aria-expanded", "true");
-    el.innerHTML = '<div class="xp-h">Exchanges · ' + AX.esc(sym) + '</div><div class="xp-b"><div class="xp-e">Loading…</div></div>';
+    var tok = sym;
+    el.innerHTML = '<div class="xp-h"><span>Exchanges ·</span><label class="xp-tk"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg><input class="xp-q" value="' + AX.esc(sym) + '" placeholder="Search token" autocomplete="off" spellcheck="false" aria-label="Search token"></label></div><div class="xp-b"><div class="xp-e">Loading…</div></div>';
     document.body.appendChild(el);
     var place = function () {
       var r = btn.getBoundingClientRect(), w = el.offsetWidth, h = el.offsetHeight;
@@ -267,21 +268,29 @@
         if (onPick && own < 0) {
           return '<div class="xp-r"><span class="xp-x">' + AX.xt(r.ex) + "<b>" + AX.esc(AX.exName(r.ex)) + '</b><i class="tg' + (r.type === "spot" ? " s" : "") + '">' + (r.type === "spot" ? "SPOT" : "FUT") + "</i></span><span>" + AX.plain(r.price) + '</span><span class="' + AX.volc(r.vol) + '">' + AX.vol(r.vol) + "</span><span>" + f(r) + '</span><span class="xp-ls"><button type="button" class="xp-lb l" data-k="' + key + '" data-s="0">L</button><button type="button" class="xp-lb s" data-k="' + key + '" data-s="1">S</button></span></div>';
         }
-        var on = onPick ? key === cur[own] : cur.indexOf(key) > -1, dis = onPick && key === cur[1 - own];
-        var open = onPick ? '<button type="button" class="xp-r' + (on ? " cur" : "") + (dis ? " dis" : "") + '" data-k="' + key + '">' : '<a class="xp-r' + (on ? " cur" : "") + '" href="' + AX.exUrl(r.ex, r.type, sym) + '" target="_blank" rel="noopener">';
+        var on = onPick ? key === cur[own] && tok === sym : cur.indexOf(key) > -1, dis = onPick && key === cur[1 - own] && tok === (osym || sym);
+        var open = onPick ? '<button type="button" class="xp-r' + (on ? " cur" : "") + (dis ? " dis" : "") + '" data-k="' + key + '">' : '<a class="xp-r' + (on ? " cur" : "") + '" href="' + AX.exUrl(r.ex, r.type, tok) + '" target="_blank" rel="noopener">';
         return open + '<span class="xp-x">' + AX.xt(r.ex) + "<b>" + AX.esc(AX.exName(r.ex)) + '</b><i class="tg' + (r.type === "spot" ? " s" : "") + '">' + (r.type === "spot" ? "SPOT" : "FUT") + "</i></span><span>" + AX.plain(r.price) + "</span><span class=\"" + AX.volc(r.vol) + "\">" + AX.vol(r.vol) + "</span><span>" + f(r) + "</span>" + (onPick ? "</button>" : "</a>");
       }).join("") : '<div class="xp-e">No other listings found</div>';
       place();
     };
     el.addEventListener("click", function (e) {
       var b = e.target.closest("button[data-k]"); if (!b || !onPick) return;
-      var k = b.getAttribute("data-k").split(":"); xpClose(); onPick(k[0], k[1], +b.getAttribute("data-s") || 0);
+      var k = b.getAttribute("data-k").split(":"); xpClose(); onPick(k[0], k[1], tok);
     });
-    var c = XC[sym];
-    if (c && Date.now() - c.t < 15000) { paint(c.d); return; }
-    fetch("/api/tokex?symbol=" + encodeURIComponent(sym), { cache: "no-store" }).then(function (r) { return r.json(); })
-      .then(function (j) { XC[sym] = { t: Date.now(), d: j.data || [] }; paint(j.data || []); })
-      .catch(function () { if (XP === el) el.querySelector(".xp-b").innerHTML = '<div class="xp-e">Could not load exchanges</div>'; });
+    var load = function (t) {
+      tok = t; var c = XC[t];
+      if (c && Date.now() - c.t < 15000) { paint(c.d); return; }
+      el.querySelector(".xp-b").innerHTML = '<div class="xp-e">Loading…</div>';
+      fetch("/api/tokex?symbol=" + encodeURIComponent(t), { cache: "no-store" }).then(function (r) { return r.json(); })
+        .then(function (j) { XC[t] = { t: Date.now(), d: j.data || [] }; if (tok === t) paint(j.data || []); })
+        .catch(function () { if (XP === el) el.querySelector(".xp-b").innerHTML = '<div class="xp-e">Could not load exchanges</div>'; });
+    };
+    var q = el.querySelector(".xp-q");
+    q.addEventListener("focus", function () { q.select(); });
+    q.addEventListener("blur", function () { setTimeout(function () { if (XP === el && !q.value.trim()) q.value = tok; }, 200); });
+    if (window.initAutocomplete) window.initAutocomplete(q, function (symbol, base) { var t = AX.base(base || symbol); q.value = t; q.blur(); load(t); });
+    load(sym);
   };
   /* 3723000 → "01:02:03" */
   AX.hms = function (ms) {
