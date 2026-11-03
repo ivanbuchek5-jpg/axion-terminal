@@ -10,7 +10,7 @@
 <script>(function(){var t=null;try{t=localStorage.getItem('axion-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',t==='light'?'#E9EAEC':'#25272D')})()</script>
 <script>(function(){var d=document.documentElement;try{var t=+sessionStorage.getItem('axion-pt');sessionStorage.removeItem('axion-pt');if(t&&Date.now()-t<10000&&!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)){d.classList.add('pt-in');setTimeout(function(){d.classList.remove('pt-in')},4500)}}catch(e){}})()</script>
 <style>html{background:#25272D}html[data-theme=light]{background:#E9EAEC}html.pt-in{background:#0E0F11}html:not(.css) body{visibility:hidden}</style>
-<link rel="stylesheet" href="axion.css?v=24" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
+<link rel="stylesheet" href="axion.css?v=25" onload="document.documentElement.classList.add('css')" onerror="document.documentElement.classList.add('css')"/>
 <script>setTimeout(function(){document.documentElement.classList.add("css")},3000)</script>
 </head>
 <body>
@@ -36,14 +36,18 @@
     <div class="exg" id="exs"></div>
     <div class="card c-chart" style="min-width:0">
       <div class="ctl">
-        <div class="seg" id="ivSeg"><button data-v="1000" class="on">1s</button><button data-v="2000">2s</button><button data-v="5000">5s</button></div>
-        <div class="seg" id="rgSeg"><button data-v="60">1h</button><button data-v="360">6h</button><button data-v="1440" class="on">24h</button></div>
-        <div class="legend"><span><i style="background:var(--accent-text)"></i>Entry (open)</span><span><i style="background:var(--neg)"></i>Exit (close)</span></div>
+        <div class="seg" id="tabSeg"><button data-v="sp" class="on">Spread</button><button data-v="pr">Prices</button></div>
+        <div class="seg sp-only" id="ivSeg"><button data-v="1000" class="on">1s</button><button data-v="2000">2s</button><button data-v="5000">5s</button></div>
+        <div class="seg sp-only" id="rgSeg"><button data-v="60">1h</button><button data-v="360">6h</button><button data-v="1440" class="on">24h</button></div>
+        <div class="seg pr-only" id="tfSeg"><button data-v="1" class="on">1m</button><button data-v="3">3m</button><button data-v="5">5m</button><button data-v="15">15m</button></div>
+        <div class="legend sp-only"><span><i style="background:var(--accent-text)"></i>Entry (open)</span><span><i style="background:var(--neg)"></i>Exit (close)</span></div>
+        <span class="sp"></span>
+        <div class="legend pr-only" id="prLeg"></div>
         <span class="sp"></span>
         <button class="btn sm" id="bFit" type="button">Fit</button>
-        <button class="btn sm" id="bClr" type="button">Clear</button>
+        <button class="btn sm sp-only" id="bClr" type="button">Clear</button>
       </div>
-      <div class="chart-w"><div id="sp-chart"></div><div class="tip" id="sp-tip"></div></div>
+      <div class="chart-w"><div id="sp-chart"></div><div class="tip" id="sp-tip"></div><div id="pr-chart" hidden></div><div class="tip" id="pr-tip"></div></div>
       <div class="mu" id="hNote" style="padding:8px 16px 12px;font:500 .6875rem var(--mono)"></div>
     </div>
 
@@ -86,10 +90,10 @@
 </main>
 </div>
 
-<script src="lwc.js?v=24"></script>
-<script src="autocomplete.js?v=24"></script>
-<script src="shared.js?v=24"></script>
-<script src="autocomplete.js?v=24"></script>
+<script src="lwc.js?v=25"></script>
+<script src="autocomplete.js?v=25"></script>
+<script src="shared.js?v=25"></script>
+<script src="autocomplete.js?v=25"></script>
 <script>
 (function(){
   AX.init("spread", { ticker: false });
@@ -169,6 +173,8 @@
     if (!chart) return;
     var t = Math.floor(Date.now() / 1000);
     pxMap[t] = { l: pl, s: ps };
+    var m1 = Math.floor(t / 60) * 60; ups(P1.l, m1, pl); ups(P1.s, m1, ps);
+    if (pc){ var st = tf * 60, bk = Math.floor(t / st) * st; try { pL.update({ time: bk, value: pl }); pS.update({ time: bk, value: ps }); } catch (e) {} }
     var a = hist.e[hist.e.length - 1];
     if (a && a.time > t) return;
     if (a && a.time === t){ a.value = en; hist.x[hist.x.length - 1].value = ex; }
@@ -193,13 +199,71 @@
         var live = hist; // points collected while history was loading
         var e = [], x = [], first = live.e.length ? live.e[0].time : Infinity;
         for (var i = 0; i < j.t.length; i++){ if (j.t[i] >= first) break; pxMap[j.t[i]] = { l: j.l[i], s: j.s[i] }; e.push({ time: j.t[i], value: j["in"][i] }); x.push({ time: j.t[i], value: j.out[i] }); }
+        var hl = [], hs = [], lastT = 0;
+        for (var q = 0; q < j.t.length; q++){ hl.push({ time: j.t[q], value: j.l[q] }); hs.push({ time: j.t[q], value: j.s[q] }); lastT = j.t[q]; }
+        P1 = { l: hl.concat(P1.l.filter(function(z){ return z.time > lastT; })), s: hs.concat(P1.s.filter(function(z){ return z.time > lastT; })) };
+        paintPrice();
         hist = { e: e.concat(live.e), x: x.concat(live.x) };
         sE.setData(hist.e); sX.setData(hist.x); histOk = true;
         $("hNote").textContent = "History: 1-min candles · " + j.n + " points";
         applyRange();
       }).catch(function(){ $("hNote").textContent = "History unavailable — chart fills live."; });
   }
-  $("bFit").addEventListener("click", function(){ if (chart) chart.timeScale().fitContent(); });
+  /* ── prices tab: both legs' own prices on one chart, 1/3/5/15-minute candles' closes ── */
+  var pc = null, pL = null, pS = null, P1 = { l: [], s: [] }, tf = 1, tab = "sp";
+  function ups(a, t, v){ var z = a[a.length - 1]; if (z && z.time === t) z.value = v; else if (!z || z.time < t) a.push({ time: t, value: v }); }
+  function aggr(a, m){
+    if (m === 1) return a;
+    var out = [], st = m * 60, cur = null;
+    a.forEach(function(p){ var b = Math.floor(p.time / st) * st; if (cur && cur.time === b) cur.value = p.value; else { cur = { time: b, value: p.value }; out.push(cur); } });
+    return out;
+  }
+  function lbl(l){ return AX.exName(l[0]).toUpperCase() + (l[1] === "spot" ? " SPOT" : " FUT"); }
+  function initPrice(){
+    if (pc || !window.LightweightCharts) return; var c = cc();
+    pc = LightweightCharts.createChart($("pr-chart"), {
+      autoSize: true,
+      layout: { background: { type: "solid", color: c.bg }, textColor: c.txt, fontFamily: "JetBrains Mono, monospace", fontSize: 11 },
+      grid: { vertLines: { color: c.grid }, horzLines: { color: c.grid } },
+      rightPriceScale: { borderVisible: false, scaleMargins: { top: .1, bottom: .1 } },
+      timeScale: { timeVisible: true, secondsVisible: false, borderVisible: false, rightOffset: 4 },
+      crosshair: { mode: 0 }
+    });
+    var o = { lineWidth: 2, priceLineVisible: true, lastValueVisible: true, priceLineStyle: 1 };
+    pL = pc.addLineSeries(Object.assign({ color: c.up }, o)); pS = pc.addLineSeries(Object.assign({ color: c.dn }, o));
+    var tip = $("pr-tip"), wrap = $("pr-chart");
+    pc.subscribeCrosshairMove(function(p){
+      if (!p.time || !p.point || p.point.x < 0 || p.point.y < 0){ tip.classList.remove("on"); return; }
+      var a = p.seriesData.get(pL), b = p.seriesData.get(pS);
+      if (!a || !b){ tip.classList.remove("on"); return; }
+      var dt = new Date(p.time * 1000), z = function(n){ return (n < 10 ? "0" : "") + n; };
+      var df = (a.value - b.value) / b.value * 100;
+      tip.innerHTML = '<div class="d">' + z(dt.getDate()) + "." + z(dt.getMonth() + 1) + ", " + z(dt.getHours()) + ":" + z(dt.getMinutes()) + "</div>" +
+        '<div class="r">' + AX.xt(lg[0]) + '<span class="k">' + AX.esc(lbl(lg)) + '</span><span class="v">' + AX.plain(a.value) + "</span></div>" +
+        '<div class="r">' + AX.xt(sh[0]) + '<span class="k">' + AX.esc(lbl(sh)) + '</span><span class="v">' + AX.plain(b.value) + "</span></div>" +
+        '<div class="r"><span class="k">Diff</span><span class="v" style="color:' + (df >= 0 ? "var(--accent-text)" : "var(--neg)") + '">' + sgn(df) + "</span></div>";
+      var w = tip.offsetWidth, h = tip.offsetHeight, W = wrap.clientWidth, H = wrap.clientHeight;
+      var left = p.point.x + 18; if (left + w > W - 80) left = p.point.x - w - 18;
+      tip.style.left = Math.max(4, left) + "px"; tip.style.top = Math.min(Math.max(8, p.point.y - h / 2), H - h - 8) + "px"; tip.classList.add("on");
+    });
+  }
+  function paintPrice(){
+    if (!pc) return;
+    var c = cc(), a = aggr(P1.l, tf), b = aggr(P1.s, tf), v = (a[a.length - 1] || { value: 1 }).value;
+    var pr = v >= 100 ? 2 : v >= 1 ? 4 : v >= .01 ? 6 : 8, f = { type: "price", precision: pr, minMove: Math.pow(10, -pr) };
+    pL.applyOptions({ title: lbl(lg), color: c.up, priceFormat: f }); pS.applyOptions({ title: lbl(sh), color: c.dn, priceFormat: f });
+    pL.setData(a); pS.setData(b);
+    $("prLeg").innerHTML = '<span><i style="background:var(--accent-text)"></i>' + AX.esc(lbl(lg)) + '</span><span><i style="background:var(--neg)"></i>' + AX.esc(lbl(sh)) + "</span>";
+    pc.timeScale().fitContent();
+  }
+  window.addEventListener("axion:theme", function(){ if (!pc) return; var c = cc(); pc.applyOptions({ layout: { textColor: c.txt }, grid: { vertLines: { color: c.grid }, horzLines: { color: c.grid } } }); pL.applyOptions({ color: c.up }); pS.applyOptions({ color: c.dn }); });
+  AX.seg($("tfSeg"), function(v){ tf = +v; paintPrice(); });
+  AX.seg($("tabSeg"), function(v){
+    tab = v; document.querySelector(".c-chart").setAttribute("data-tab", v);
+    $("sp-chart").hidden = v === "pr"; $("sp-tip").classList.remove("on"); $("pr-chart").hidden = v !== "pr"; $("pr-tip").classList.remove("on");
+    if (v === "pr"){ initPrice(); paintPrice(); }
+  });
+  $("bFit").addEventListener("click", function(){ var ch = tab === "pr" ? pc : chart; if (ch) ch.timeScale().fitContent(); });
   $("bClr").addEventListener("click", function(){ hist = { e: [], x: [] }; pxMap = {}; if (sE){ sE.setData([]); sX.setData([]); } loadHist(); });
 
   /* ── header + table + exchange cards ── */
@@ -421,6 +485,7 @@
     if (!first){
       D = null; built = false; prePaint = -1; hist = { e: [], x: [] }; pxMap = {};
       if (sE){ sE.setData([]); sX.setData([]); }
+      P1 = { l: [], s: [] }; if (pc){ pL.setData([]); pS.setData([]); }
       $("hNote").textContent = ""; AX.live($("live"), "ok", "LOADING");
       clearTimeout(timer);
     }
